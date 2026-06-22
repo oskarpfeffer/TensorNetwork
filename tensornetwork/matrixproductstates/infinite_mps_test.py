@@ -25,31 +25,41 @@ from jax.config import config
 
 
 @pytest.fixture(
-    name="backend_dtype_values",
-    params=[('numpy', np.float64), ('numpy', np.complex128),
-            ('tensorflow', np.float64), ('tensorflow', np.complex128),
-            ('pytorch', np.float64), ('jax', np.float64)])
+  name="backend_dtype_values",
+  params=[
+    ("numpy", np.float64),
+    ("numpy", np.complex128),
+    ("tensorflow", np.float64),
+    ("tensorflow", np.complex128),
+    ("pytorch", np.float64),
+    ("jax", np.float64),
+  ],
+)
 def backend_dtype(request):
   return request.param
 
 
 def get_random_np(shape, dtype, seed=0):
-  np.random.seed(seed)  #get the same tensors every time you call this function
+  np.random.seed(seed)  # get the same tensors every time you call this function
   if dtype is np.complex64:
-    return np.random.randn(*shape).astype(
-        np.float32) + 1j * np.random.randn(*shape).astype(np.float32)
+    return np.random.randn(*shape).astype(np.float32) + 1j * np.random.randn(
+      *shape
+    ).astype(np.float32)
   if dtype is np.complex128:
-    return np.random.randn(*shape).astype(
-        np.float64) + 1j * np.random.randn(*shape).astype(np.float64)
+    return np.random.randn(*shape).astype(np.float64) + 1j * np.random.randn(
+      *shape
+    ).astype(np.float64)
   return np.random.randn(*shape).astype(dtype)
 
 
 @pytest.mark.parametrize("N, pos", [(10, -1), (10, 10)])
 def test_infinite_mps_init(backend, N, pos):
   D, d = 10, 2
-  tensors = [np.random.randn(2, d, D)] + [
-      np.random.randn(D, d, D) for _ in range(N - 2)
-  ] + [np.random.randn(D, d, 1)]
+  tensors = (
+    [np.random.randn(2, d, D)]
+    + [np.random.randn(D, d, D) for _ in range(N - 2)]
+    + [np.random.randn(D, d, 1)]
+  )
   with pytest.raises(ValueError):
     InfiniteMPS(tensors, center_position=pos, backend=backend)
 
@@ -57,23 +67,21 @@ def test_infinite_mps_init(backend, N, pos):
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
 def test_TMeigs(dtype):
   D, d, N = 10, 2, 10
-  imps = InfiniteMPS.random(
-      d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend='numpy')
-  eta, l = imps.transfer_matrix_eigs('r')
-  l2 = imps.unit_cell_transfer_operator('r', l)
+  imps = InfiniteMPS.random(d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend="numpy")
+  eta, l = imps.transfer_matrix_eigs("r")
+  l2 = imps.unit_cell_transfer_operator("r", l)
   np.testing.assert_allclose(eta * l, l2)
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
-@pytest.mark.parametrize("direction", ['left', 'right'])
+@pytest.mark.parametrize("direction", ["left", "right"])
 def test_unitcell_transfer_operator(dtype, direction):
   D, d, N = 10, 2, 10
-  imps = InfiniteMPS.random(
-      d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend='numpy')
+  imps = InfiniteMPS.random(d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend="numpy")
   m = imps.backend.randn((D, D), dtype=dtype, seed=10)
   res1 = imps.unit_cell_transfer_operator(direction, m)
   sites = range(len(imps))
-  if direction == 'right':
+  if direction == "right":
     sites = reversed(sites)
 
   for site in sites:
@@ -84,8 +92,7 @@ def test_unitcell_transfer_operator(dtype, direction):
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
 def test_InfiniteMPS_canonicalize(dtype):
   D, d, N = 10, 2, 4
-  imps = InfiniteMPS.random(
-      d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend='numpy')
+  imps = InfiniteMPS.random(d=[d] * N, D=[D] * (N + 1), dtype=dtype, backend="numpy")
 
   imps.canonicalize()
-  assert imps.check_canonical() < 1E-12
+  assert imps.check_canonical() < 1e-12

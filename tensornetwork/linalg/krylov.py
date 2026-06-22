@@ -30,6 +30,7 @@ class MatvecCache:
   and have function signature A = matvec(x, *args), where each of the
   positional arguments in *args is also a Tensor.
   """
+
   def __init__(self):
     self.clear()
 
@@ -40,11 +41,13 @@ class MatvecCache:
     if backend_name not in self.cache:
       self.cache[backend_name] = {}
     if matvec not in self.cache[backend_name]:
+
       def wrapped(x, *args):
         X = Tensor(x, backend=backend_name)
         Args = [Tensor(a, backend=backend_name) for a in args]
         Y = matvec(X, *Args)
         return Y.array
+
       self.cache[backend_name][matvec] = wrapped
     return self.cache[backend_name][matvec]
 
@@ -52,9 +55,11 @@ class MatvecCache:
 KRYLOV_MATVEC_CACHE = MatvecCache()
 
 
-def krylov_error_checks(backend: Union[Text, AbstractBackend, None],
-                        x0: Union[Tensor, None],
-                        args: Union[List[Tensor], None]):
+def krylov_error_checks(
+  backend: Union[Text, AbstractBackend, None],
+  x0: Union[Tensor, None],
+  args: Union[List[Tensor], None],
+):
   """
   Checks that at least one of backend and x0 are not None; that backend
   and x0.backend agree; that if args is not None its elements are Tensors
@@ -89,10 +94,12 @@ def krylov_error_checks(backend: Union[Text, AbstractBackend, None],
       raise TypeError("x0 must be a tn.Tensor.") from err
 
     if x0.backend.name != backend.name:
-      errstr = ("If both x0 and backend are specified the"
-                "backends must agree. \n"
-                f"x0 backend: {x0.backend.name} \n"
-                f"backend: {backend.name} \n")
+      errstr = (
+        "If both x0 and backend are specified the"
+        "backends must agree. \n"
+        f"x0 backend: {x0.backend.name} \n"
+        f"backend: {backend.name} \n"
+      )
       raise ValueError(errstr)
   else:  # If x0 was not specified, set x0_array (the returned value) to None.
     x0_array = None
@@ -110,18 +117,20 @@ def krylov_error_checks(backend: Union[Text, AbstractBackend, None],
   return (backend, x0_array, args_array)
 
 
-def eigsh_lanczos(A: Callable,
-                  backend: Optional[Union[Text, AbstractBackend]] = None,
-                  args: Optional[List[Tensor]] = None,
-                  x0: Optional[Tensor] = None,
-                  shape: Optional[Tuple[int, ...]] = None,
-                  dtype: Optional[Type[np.number]] = None,
-                  num_krylov_vecs: int = 20,
-                  numeig: int = 1,
-                  tol: float = 1E-8,
-                  delta: float = 1E-8,
-                  ndiag: int = 20,
-                  reorthogonalize: bool = False) -> Tuple[Tensor, List]:
+def eigsh_lanczos(
+  A: Callable,
+  backend: Optional[Union[Text, AbstractBackend]] = None,
+  args: Optional[List[Tensor]] = None,
+  x0: Optional[Tensor] = None,
+  shape: Optional[Tuple[int, ...]] = None,
+  dtype: Optional[Type[np.number]] = None,
+  num_krylov_vecs: int = 20,
+  numeig: int = 1,
+  tol: float = 1e-8,
+  delta: float = 1e-8,
+  ndiag: int = 20,
+  reorthogonalize: bool = False,
+) -> Tuple[Tensor, List]:
   """
   Lanczos method for finding the lowest eigenvector-eigenvalue pairs
   of `A`.
@@ -162,28 +171,37 @@ def eigsh_lanczos(A: Callable,
   """
   backend, x0_array, args_array = krylov_error_checks(backend, x0, args)
   mv = KRYLOV_MATVEC_CACHE.retrieve(backend.name, A)
-  result = backend.eigsh_lanczos(mv, args=args_array,
-                                 initial_state=x0_array,
-                                 shape=shape, dtype=dtype,
-                                 num_krylov_vecs=num_krylov_vecs, numeig=numeig,
-                                 tol=tol, delta=delta, ndiag=ndiag,
-                                 reorthogonalize=reorthogonalize)
+  result = backend.eigsh_lanczos(
+    mv,
+    args=args_array,
+    initial_state=x0_array,
+    shape=shape,
+    dtype=dtype,
+    num_krylov_vecs=num_krylov_vecs,
+    numeig=numeig,
+    tol=tol,
+    delta=delta,
+    ndiag=ndiag,
+    reorthogonalize=reorthogonalize,
+  )
   eigvals, eigvecs = result
   eigvecsT = [Tensor(ev, backend=backend) for ev in eigvecs]
   return eigvals, eigvecsT
 
 
-def eigs(A: Callable,
-         backend: Optional[Union[Text, AbstractBackend]] = None,
-         args: Optional[List[Tensor]] = None,
-         x0: Optional[Tensor] = None,
-         shape: Optional[Tuple[int, ...]] = None,
-         dtype: Optional[Type[np.number]] = None,
-         num_krylov_vecs: int = 20,
-         numeig: int = 1,
-         tol: float = 1E-8,
-         which: Text = 'LR',
-         maxiter: int = 20) -> Tuple[Tensor, List]:
+def eigs(
+  A: Callable,
+  backend: Optional[Union[Text, AbstractBackend]] = None,
+  args: Optional[List[Tensor]] = None,
+  x0: Optional[Tensor] = None,
+  shape: Optional[Tuple[int, ...]] = None,
+  dtype: Optional[Type[np.number]] = None,
+  num_krylov_vecs: int = 20,
+  numeig: int = 1,
+  tol: float = 1e-8,
+  which: Text = "LR",
+  maxiter: int = 20,
+) -> Tuple[Tensor, List]:
   """
   Implicitly restarted Arnoldi method for finding the lowest
   eigenvector-eigenvalue pairs of a linear operator `A`.
@@ -252,26 +270,35 @@ def eigs(A: Callable,
   """
   backend, x0_array, args_array = krylov_error_checks(backend, x0, args)
   mv = KRYLOV_MATVEC_CACHE.retrieve(backend.name, A)
-  result = backend.eigs(mv, args=args_array, initial_state=x0_array,
-                        shape=shape, dtype=dtype,
-                        num_krylov_vecs=num_krylov_vecs, numeig=numeig,
-                        tol=tol, which=which, maxiter=maxiter)
+  result = backend.eigs(
+    mv,
+    args=args_array,
+    initial_state=x0_array,
+    shape=shape,
+    dtype=dtype,
+    num_krylov_vecs=num_krylov_vecs,
+    numeig=numeig,
+    tol=tol,
+    which=which,
+    maxiter=maxiter,
+  )
   eigvals, eigvecs = result
   eigvecsT = [Tensor(eV, backend=backend) for eV in eigvecs]
   return eigvals, eigvecsT
 
 
-def gmres(A_mv: Callable,
-          b: Tensor,
-          A_args: Optional[List] = None,
-          x0: Optional[Tensor] = None,
-          tol: float = 1E-05,
-          atol: Optional[float] = None,
-          num_krylov_vectors: Optional[int] = None,
-          maxiter: Optional[int] = 1,
-          M: Optional[Callable] = None
-          ) -> Tuple[Tensor, int]:
-  """ GMRES solves the linear system A @ x = b for x given a vector `b` and
+def gmres(
+  A_mv: Callable,
+  b: Tensor,
+  A_args: Optional[List] = None,
+  x0: Optional[Tensor] = None,
+  tol: float = 1e-05,
+  atol: Optional[float] = None,
+  num_krylov_vectors: Optional[int] = None,
+  maxiter: Optional[int] = 1,
+  M: Optional[Callable] = None,
+) -> Tuple[Tensor, int]:
+  """GMRES solves the linear system A @ x = b for x given a vector `b` and
   a general (not necessarily symmetric/Hermitian) linear operator `A`.
 
   As a Krylov method, GMRES does not require a concrete matrix representation
@@ -352,10 +379,17 @@ def gmres(A_mv: Callable,
   backend, x0_array, args_array = krylov_error_checks(b.backend, x0, A_args)
 
   mv = KRYLOV_MATVEC_CACHE.retrieve(backend.name, A_mv)
-  out = backend.gmres(mv, b_array, A_args=args_array,
-                      x0=x0_array, tol=tol, atol=atol,
-                      num_krylov_vectors=num_krylov_vectors,
-                      maxiter=maxiter, M=M)
+  out = backend.gmres(
+    mv,
+    b_array,
+    A_args=args_array,
+    x0=x0_array,
+    tol=tol,
+    atol=atol,
+    num_krylov_vectors=num_krylov_vectors,
+    maxiter=maxiter,
+    M=M,
+  )
   result, info = out
   resultT = Tensor(result, backend=b.backend)
   return (resultT, info)

@@ -16,10 +16,12 @@ import numpy as np
 import jax
 import pytest
 from tensornetwork.backends.jax import jitted_functions
-jax.config.update('jax_enable_x64', True)
+
+jax.config.update("jax_enable_x64", True)
 
 jax_dtypes = [np.float32, np.float64, np.complex64, np.complex128]
 precision = jax.lax.Precision.HIGHEST
+
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
 @pytest.mark.parametrize("ncv", [10, 20, 30])
@@ -38,15 +40,18 @@ def test_arnoldi_factorization(dtype, ncv):
   Vm = jax.numpy.zeros((ncv, D), dtype=dtype)
   H = jax.numpy.zeros((ncv, ncv), dtype=dtype)
   start = 0
-  tol = 1E-5
-  Vm, Hm, residual, norm, _, _ = arnoldi(matvec, [mat], x, Vm, H, start, ncv,
-                                         tol, precision)
+  tol = 1e-5
+  Vm, Hm, residual, norm, _, _ = arnoldi(
+    matvec, [mat], x, Vm, H, start, ncv, tol, precision
+  )
   fm = residual * norm
   em = np.zeros((1, Vm.shape[0]))
   em[0, -1] = 1
-  #test arnoldi relation
-  np.testing.assert_almost_equal(mat @ Vm.T - Vm.T @ Hm - fm[:, None] * em,
-                                 np.zeros((D, ncv)).astype(dtype))
+  # test arnoldi relation
+  np.testing.assert_almost_equal(
+    mat @ Vm.T - Vm.T @ Hm - fm[:, None] * em, np.zeros((D, ncv)).astype(dtype)
+  )
+
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
 def test_LR_sort(dtype):
@@ -59,6 +64,7 @@ def test_LR_sort(dtype):
   exp_x = x[exp_inds][-p:]
   np.testing.assert_allclose(exp_x, actual_x)
   np.testing.assert_allclose(exp_inds, actual_inds)
+
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
 def test_SA_sort(dtype):
@@ -96,19 +102,21 @@ def test_shifted_QR(dtype):
   alphas = jax.numpy.zeros(ncv, dtype=dtype)
   betas = jax.numpy.zeros(ncv - 1, dtype=dtype)
   start = 0
-  tol = 1E-5
-  Vm, alphas, betas, residual, norm, _, _ = lanczos(matvec, [Ham], x, Vm,
-                                                    alphas, betas, start, ncv,
-                                                    tol, precision)
+  tol = 1e-5
+  Vm, alphas, betas, residual, norm, _, _ = lanczos(
+    matvec, [Ham], x, Vm, alphas, betas, start, ncv, tol, precision
+  )
 
-  Hm = jax.numpy.diag(alphas) + jax.numpy.diag(betas, -1) + jax.numpy.diag(
-      betas.conj(), 1)
+  Hm = (
+    jax.numpy.diag(alphas) + jax.numpy.diag(betas, -1) + jax.numpy.diag(betas.conj(), 1)
+  )
   fm = residual * norm
   em = np.zeros((1, ncv))
   em[0, -1] = 1
-  #test arnoldi relation
-  np.testing.assert_almost_equal(Ham @ Vm.T - Vm.T @ Hm - fm[:, None] * em,
-                                 np.zeros((D, ncv)).astype(dtype))
+  # test arnoldi relation
+  np.testing.assert_almost_equal(
+    Ham @ Vm.T - Vm.T @ Hm - fm[:, None] * em, np.zeros((D, ncv)).astype(dtype)
+  )
 
   evals, _ = jax.numpy.linalg.eigh(Hm)
   shifts, _ = SA_sort(numeig, evals)
@@ -120,8 +128,9 @@ def test_shifted_QR(dtype):
   ek = np.zeros((1, ncv))
   ek[0, numeig - 1] = 1.0
 
-  np.testing.assert_almost_equal(Ham @ Vk.T - Vk.T @ Hk - fk[:, None] * ek,
-                                 np.zeros((D, ncv)).astype(dtype))
+  np.testing.assert_almost_equal(
+    Ham @ Vk.T - Vk.T @ Hk - fk[:, None] * ek, np.zeros((D, ncv)).astype(dtype)
+  )
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
@@ -142,20 +151,22 @@ def test_lanczos_factorization(dtype, ncv):
 
   Vm = jax.numpy.zeros((ncv, D), dtype=dtype)
   alphas = jax.numpy.zeros(ncv, dtype=dtype)
-  betas = jax.numpy.zeros(ncv-1, dtype=dtype)
+  betas = jax.numpy.zeros(ncv - 1, dtype=dtype)
   start = 0
-  tol = 1E-5
-  Vm, alphas, betas, residual, norm, _, _ = lanczos(matvec, [Ham], x, Vm,
-                                                    alphas, betas, start, ncv,
-                                                    tol, precision)
-  Hm = jax.numpy.diag(alphas) + jax.numpy.diag(betas, -1) + jax.numpy.diag(
-      betas.conj(), 1)
+  tol = 1e-5
+  Vm, alphas, betas, residual, norm, _, _ = lanczos(
+    matvec, [Ham], x, Vm, alphas, betas, start, ncv, tol, precision
+  )
+  Hm = (
+    jax.numpy.diag(alphas) + jax.numpy.diag(betas, -1) + jax.numpy.diag(betas.conj(), 1)
+  )
   fm = residual * norm
   em = np.zeros((1, Vm.shape[0]))
   em[0, -1] = 1
-  #test arnoldi relation
-  np.testing.assert_almost_equal(Ham @ Vm.T - Vm.T @ Hm - fm[:, None] * em,
-                                 np.zeros((D, ncv)).astype(dtype))
+  # test arnoldi relation
+  np.testing.assert_almost_equal(
+    Ham @ Vm.T - Vm.T @ Hm - fm[:, None] * em, np.zeros((D, ncv)).astype(dtype)
+  )
 
 
 @pytest.mark.parametrize("dtype", jax_dtypes)
@@ -177,10 +188,10 @@ def test_gmres_on_small_known_problem(dtype):
   @jax.tree_util.Partial
   def A_mv(x):
     return A @ x
-  tol = A.size*jax.numpy.finfo(dtype).eps
-  x, _, _, _ = gmres.gmres_m(A_mv, [], b, x0, tol, tol, n_kry, maxiter,
-                             precision)
-  solution = jax.numpy.array([2., 1.], dtype=dtype)
+
+  tol = A.size * jax.numpy.finfo(dtype).eps
+  x, _, _, _ = gmres.gmres_m(A_mv, [], b, x0, tol, tol, n_kry, maxiter, precision)
+  solution = jax.numpy.array([2.0, 1.0], dtype=dtype)
   np.testing.assert_allclose(x, solution, atol=tol)
 
 
@@ -202,23 +213,23 @@ def test_gmres_krylov(dtype):
   @jax.tree_util.Partial
   def A_mv(x):
     return A @ x
+
   A = jax.numpy.array(np.random.rand(n, n).astype(dtype))
-  tol = A.size*jax.numpy.finfo(dtype).eps
+  tol = A.size * jax.numpy.finfo(dtype).eps
   x0 = jax.numpy.array(np.random.rand(n).astype(dtype))
   b = jax.numpy.array(np.random.rand(n), dtype=dtype)
   r, beta = gmres.gmres_residual(A_mv, [], b, x0)
-  _, V, R, _ = gmres.gmres_krylov(A_mv, [], n_kry, x0, r, beta,
-                                  tol, jax.numpy.linalg.norm(b),
-                                  precision)
+  _, V, R, _ = gmres.gmres_krylov(
+    A_mv, [], n_kry, x0, r, beta, tol, jax.numpy.linalg.norm(b), precision
+  )
   phases = jax.numpy.sign(jax.numpy.diagonal(R[:-1, :]))
   R = phases.conj()[:, None] * R[:-1, :]
   Vtest = np.zeros((n, n_kry + 1), dtype=x0.dtype)
-  Vtest[:, 0] = r/beta
+  Vtest[:, 0] = r / beta
   Vtest = jax.numpy.array(Vtest)
   Htest = jax.numpy.zeros((n_kry + 1, n_kry), dtype=x0.dtype)
   for k in range(n_kry):
-    Vtest, Htest = gmres.kth_arnoldi_step(k, A_mv, [], Vtest, Htest, tol,
-                                          precision)
+    Vtest, Htest = gmres.kth_arnoldi_step(k, A_mv, [], Vtest, Htest, tol, precision)
   _, Rtest = jax.numpy.linalg.qr(Htest)
   phases = jax.numpy.sign(jax.numpy.diagonal(Rtest))
   Rtest = phases.conj()[:, None] * Rtest
@@ -240,13 +251,15 @@ def test_gmres_arnoldi_step(dtype):
   A = jax.numpy.array(np.random.rand(n, n).astype(dtype))
   x0 = jax.numpy.array(np.random.rand(n).astype(dtype))
   Q = np.zeros((n, n_kry + 1), dtype=x0.dtype)
-  Q[:, 0] = x0/jax.numpy.linalg.norm(x0)
+  Q[:, 0] = x0 / jax.numpy.linalg.norm(x0)
   Q = jax.numpy.array(Q)
   H = jax.numpy.zeros((n_kry + 1, n_kry), dtype=x0.dtype)
-  tol = A.size*jax.numpy.finfo(dtype).eps
+  tol = A.size * jax.numpy.finfo(dtype).eps
+
   @jax.tree_util.Partial
   def A_mv(x):
     return A @ x
+
   for k in range(n_kry):
     Q, H = gmres.kth_arnoldi_step(k, A_mv, [], Q, H, tol, precision)
   QAQ = Q[:, :n_kry].conj().T @ A @ Q[:, :n_kry]
@@ -269,5 +282,5 @@ def test_givens(dtype):
   rot[1, 0] = sn
   rot = jax.numpy.array(rot)
   result = rot @ v
-  tol = 4*jax.numpy.finfo(dtype).eps
-  np.testing.assert_allclose(result[-1], 0., atol=tol)
+  tol = 4 * jax.numpy.finfo(dtype).eps
+  np.testing.assert_allclose(result[-1], 0.0, atol=tol)

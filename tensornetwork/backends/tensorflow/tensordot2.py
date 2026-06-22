@@ -59,8 +59,7 @@ def tensordot(tf, a, b, axes, name: Optional[Text] = None) -> Tensor:
       tensor.
   """
 
-  def _tensordot_should_flip(contraction_axes: List[int],
-                             free_axes: List[int]) -> bool:
+  def _tensordot_should_flip(contraction_axes: List[int], free_axes: List[int]) -> bool:
     """Helper method to determine axis ordering.
 
     We minimize the average distance the indices would have to move under the
@@ -93,15 +92,14 @@ def tensordot(tf, a, b, axes, name: Optional[Text] = None) -> Tensor:
     Assumes shapes are both fully specified.
     """
     cur_shape = tensor.get_shape().as_list()
-    if (len(new_shape) == len(cur_shape) and
-        all(d0 == d1 for d0, d1 in zip(cur_shape, new_shape))):
+    if len(new_shape) == len(cur_shape) and all(
+      d0 == d1 for d0, d1 in zip(cur_shape, new_shape)
+    ):
       return tensor
     return tf.reshape(tensor, new_shape)
 
   def _tensordot_reshape(
-      a: Tensor,
-      axes: Union[Sequence[int], Tensor],
-      is_right_term=False
+    a: Tensor, axes: Union[Sequence[int], Tensor], is_right_term=False
   ) -> Tuple[Tensor, Union[List[int], Tensor], Optional[List[int]], bool]:
     """Helper method to perform transpose and reshape for contraction op.
 
@@ -169,8 +167,7 @@ def tensordot(tf, a, b, axes, name: Optional[Text] = None) -> Tensor:
       #   unneeded tranposes in this case at the expense of a somewhat more
       #   complicated graph. Unclear whether this would be beneficial overall.
       flipped = is_right_term
-      perm = (
-          tf.concat([axes, free], 0) if flipped else tf.concat([free, axes], 0))
+      perm = tf.concat([axes, free], 0) if flipped else tf.concat([free, axes], 0)
       transposed_a = tf.transpose(a, perm)
 
     free_dims = tf.gather(shape_a, free)
@@ -194,27 +191,31 @@ def tensordot(tf, a, b, axes, name: Optional[Text] = None) -> Tensor:
         raise ValueError("'axes' must be at least 0.")
       if a_shape.ndims is not None:
         if axes > a_shape.ndims:
-          raise ValueError("'axes' must not be larger than the number of "
-                           "dimensions of tensor %s." % a)
-        return (list(range(a_shape.ndims - axes,
-                           a_shape.ndims)), list(range(axes)))
+          raise ValueError(
+            "'axes' must not be larger than the number of dimensions of tensor %s." % a
+          )
+        return (list(range(a_shape.ndims - axes, a_shape.ndims)), list(range(axes)))
       rank = tf.rank(a)
-      return (tf.range(rank - axes, rank,
-                       dtype=tf.int32), tf.range(axes, dtype=tf.int32))
+      return (
+        tf.range(rank - axes, rank, dtype=tf.int32),
+        tf.range(axes, dtype=tf.int32),
+      )
     if isinstance(axes, (list, tuple)):
       if len(axes) != 2:
         raise ValueError("'axes' must be an integer or have length 2.")
       a_axes = axes[0]
       b_axes = axes[1]
-      if isinstance(a_axes, tf.compat.integral_types) and \
-          isinstance(b_axes, tf.compat.integral_types):
+      if isinstance(a_axes, tf.compat.integral_types) and isinstance(
+        b_axes, tf.compat.integral_types
+      ):
         a_axes = [a_axes]
         b_axes = [b_axes]
       # NOTE: This fails if either a_axes and b_axes are Tensors.
       if len(a_axes) != len(b_axes):
         raise ValueError(
-            "Different number of contraction axes 'a' and 'b', %s != %s." %
-            (len(a_axes), len(b_axes)))
+          "Different number of contraction axes 'a' and 'b', %s != %s."
+          % (len(a_axes), len(b_axes))
+        )
 
       # The contraction indices do not need to be permuted.
       # Sort axes to avoid unnecessary permutations of a.
@@ -231,20 +232,22 @@ def tensordot(tf, a, b, axes, name: Optional[Text] = None) -> Tensor:
     a = tf.convert_to_tensor(a, name="a")
     b = tf.convert_to_tensor(b, name="b")
     a_axes, b_axes = _tensordot_axes(a, axes)
-    a_reshape, a_free_dims, a_free_dims_static, a_transp = _tensordot_reshape(
-        a, a_axes)
+    a_reshape, a_free_dims, a_free_dims_static, a_transp = _tensordot_reshape(a, a_axes)
     b_reshape, b_free_dims, b_free_dims_static, b_transp = _tensordot_reshape(
-        b, b_axes, is_right_term=True)
+      b, b_axes, is_right_term=True
+    )
 
     ab_matmul = tf.matmul(
-        a_reshape, b_reshape, transpose_a=a_transp, transpose_b=b_transp)
+      a_reshape, b_reshape, transpose_a=a_transp, transpose_b=b_transp
+    )
 
     if isinstance(a_free_dims, list) and isinstance(b_free_dims, list):
       return tf.reshape(ab_matmul, a_free_dims + b_free_dims, name=_name)
     a_free_dims = tf.convert_to_tensor(a_free_dims, dtype=tf.dtypes.int32)
     b_free_dims = tf.convert_to_tensor(b_free_dims, dtype=tf.dtypes.int32)
     product = tf.reshape(
-        ab_matmul, tf.concat([a_free_dims, b_free_dims], 0), name=_name)
+      ab_matmul, tf.concat([a_free_dims, b_free_dims], 0), name=_name
+    )
     if a_free_dims_static is not None and b_free_dims_static is not None:
       product.set_shape(a_free_dims_static + b_free_dims_static)
     return product

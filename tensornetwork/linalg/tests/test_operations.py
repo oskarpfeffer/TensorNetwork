@@ -179,7 +179,7 @@ def test_abs_vs_backend(backend, dtype):
   dtype_b = testing_utils.np_dtype_to_backend(backend, dtype)
   backend_obj = backends.backend_factory.get_backend(backend)
   tensor = tensornetwork.ones(shape, backend=backend, dtype=dtype_b)
-  if (backend == "pytorch" and dtype == np.float16):
+  if backend == "pytorch" and dtype == np.float16:
     pytest.skip("Prod not supported with this dtype and backend.")
   else:
     backend_result = backend_obj.sqrt(tensor.array)
@@ -193,7 +193,7 @@ def test_sqrt_vs_backend(backend, dtype):
   dtype_b = testing_utils.np_dtype_to_backend(backend, dtype)
   backend_obj = backends.backend_factory.get_backend(backend)
   tensor = tensornetwork.ones(shape, backend=backend, dtype=dtype_b)
-  if (backend == "pytorch" and dtype == np.float16):
+  if backend == "pytorch" and dtype == np.float16:
     pytest.skip("Prod not supported with this dtype and backend.")
   else:
     backend_result = backend_obj.sqrt(tensor.array)
@@ -223,11 +223,9 @@ def test_einsum_invalid_backends(dtype, backend):
     tensor2 = tensornetwork.ones(shape, backend=other_backend, dtype=dtype2)
     for other_other_backend in backend_names:
       dtype3 = testing_utils.np_dtype_to_backend(other_other_backend, dtype)
-      tensor3 = tensornetwork.zeros(shape, backend=other_other_backend,
-                                    dtype=dtype3)
+      tensor3 = tensornetwork.zeros(shape, backend=other_other_backend, dtype=dtype3)
       with pytest.raises(ValueError):
-        _ = tensornetwork.einsum("ba, bc, dc", tensor1, tensor2, tensor3,
-                                 optimize=True)
+        _ = tensornetwork.einsum("ba, bc, dc", tensor1, tensor2, tensor3, optimize=True)
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_bool)
@@ -238,8 +236,7 @@ def test_einsum_vs_backend(dtype, backend):
   tensor1 = tensornetwork.ones(shape, backend=backend, dtype=dtype)
   tensor2 = tensornetwork.ones(shape, backend=backend, dtype=dtype)
   tensor3 = tensornetwork.ones(shape, backend=backend, dtype=dtype)
-  result = tensornetwork.einsum("ba, bc, dc", tensor1, tensor2, tensor3,
-                                optimize=True)
+  result = tensornetwork.einsum("ba, bc, dc", tensor1, tensor2, tensor3, optimize=True)
   backend_obj = backends.backend_factory.get_backend(backend)
   arrays = [t.array for t in [tensor1, tensor2, tensor3]]
   backend_result = backend_obj.einsum("ba, bc, dc", *arrays, optimize=True)
@@ -288,8 +285,7 @@ def test_ncon_invalid_backends(dtype, backend):
     tensor2 = tensornetwork.ones(shape, backend=other_backend, dtype=dtype2)
     for other_other_backend in backend_names:
       dtype3 = testing_utils.np_dtype_to_backend(other_other_backend, dtype)
-      tensor3 = tensornetwork.zeros(shape, backend=other_other_backend,
-                                    dtype=dtype3)
+      tensor3 = tensornetwork.zeros(shape, backend=other_other_backend, dtype=dtype3)
       tensors = [tensor1, tensor2, tensor3]
       idxs = [[1, -1], [1, 2], [-2, 2]]
       with pytest.raises(ValueError):
@@ -314,42 +310,39 @@ def test_ncon_vs_backend(dtype, backend):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_diagonal(backend, dtype):
-  """ Checks that Tensor.diagonal() works.
-  """
+  """Checks that Tensor.diagonal() works."""
   shape = (2, 3, 3)
   A, _ = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
-    np.testing.assert_allclose(tensornetwork.diagonal(A).array,
-                               A.backend.diagonal(A.array))
+    np.testing.assert_allclose(
+      tensornetwork.diagonal(A).array, A.backend.diagonal(A.array)
+    )
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_diagflat(backend, dtype):
-  """ Checks that Tensor.diagflat() works.
-  """
+  """Checks that Tensor.diagflat() works."""
   shape = (2, 3, 3)
   A, _ = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
-    np.testing.assert_allclose(tensornetwork.diagflat(A).array,
-                               A.backend.diagflat(A.array))
+    np.testing.assert_allclose(
+      tensornetwork.diagflat(A).array, A.backend.diagflat(A.array)
+    )
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_half)
 def test_trace(backend, dtype):
-  """ Checks that Tensor.trace() works.
-  """
+  """Checks that Tensor.trace() works."""
   shape = (2, 3, 3)
   A, _ = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
-    np.testing.assert_allclose(tensornetwork.trace(A).array,
-                               A.backend.trace(A.array))
+    np.testing.assert_allclose(tensornetwork.trace(A).array, A.backend.trace(A.array))
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 @pytest.mark.parametrize("pivotA", [None, 1, 2, 0, -1])
 def test_pivot(backend, dtype, pivotA):
-  """ Checks that Tensor.pivot() works.
-  """
+  """Checks that Tensor.pivot() works."""
   shapeA = (2, 3, 4, 2)
   A, _ = testing_utils.safe_randn(shapeA, backend, dtype)
   if A is not None:
@@ -364,9 +357,8 @@ def test_pivot(backend, dtype, pivotA):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_kron(backend, dtype):
-  """ Checks that Tensor.kron() works.
-  """
-  if (backend == "pytorch" and dtype in (np.complex64, np.complex128)):
+  """Checks that Tensor.kron() works."""
+  if backend == "pytorch" and dtype in (np.complex64, np.complex128):
     pytest.skip("pytorch support for complex dtypes is currently poor.")
 
   np.random.seed(10)
@@ -383,13 +375,12 @@ def test_kron(backend, dtype):
   t1 = Tensor(np.random.rand(2, 2, 2, 2).astype(dtype), backend=backend)
   t2 = Tensor(np.random.rand(3, 3, 3, 3).astype(dtype), backend=backend)
   res_kron = kron(t1, t2)
-  res_ncon = ncon([t1.array, t2.array], [[-1, -2, -5, -6], [-3, -4, -7, -8]],
-                  backend=backend)
+  res_ncon = ncon(
+    [t1.array, t2.array], [[-1, -2, -5, -6], [-3, -4, -7, -8]], backend=backend
+  )
   np.testing.assert_allclose(res_kron.array, res_ncon)
   mat1 = res_kron.reshape((36, 36))
-  mat2 = np.kron(
-      np.array(t1.array).reshape(4, 4),
-      np.array(t2.array).reshape(9, 9))
+  mat2 = np.kron(np.array(t1.array).reshape(4, 4), np.array(t2.array).reshape(9, 9))
   np.testing.assert_allclose(mat1.array, mat2)
 
 
@@ -402,7 +393,7 @@ def test_kron_raises(backend):
   with pytest.raises(ValueError, match="tensorB.ndim"):
     kron(t2, t1)
 
-  t1 = Tensor(np.random.rand(2, 2, 2), backend='numpy')
-  t2 = Tensor(np.random.rand(3, 3), backend='tensorflow')
+  t1 = Tensor(np.random.rand(2, 2, 2), backend="numpy")
+  t2 = Tensor(np.random.rand(3, 3), backend="tensorflow")
   with pytest.raises(ValueError, match="kron"):
     kron(t1, t2)

@@ -35,40 +35,44 @@ def save_nodes(nodes: List[AbstractNode], path: Union[str, BinaryIO]) -> None:
   """
   if reachable(nodes) > set(nodes):
     raise ValueError(
-        "Some nodes in `nodes` are connected to nodes not contained in `nodes`."
-        " Saving not possible.")
+      "Some nodes in `nodes` are connected to nodes not contained in `nodes`."
+      " Saving not possible."
+    )
   if len(set(nodes)) < len(list(nodes)):
     raise ValueError(
-        'Some nodes in `nodes` appear more than once. This is not supported')
-  #we need to iterate twice and order matters
+      "Some nodes in `nodes` appear more than once. This is not supported"
+    )
+  # we need to iterate twice and order matters
   edges = list(get_all_edges(nodes))
   nodes = list(nodes)
 
   old_edge_names = {n: edge.name for n, edge in enumerate(edges)}
   old_node_names = {n: node.name for n, node in enumerate(nodes)}
 
-  #generate unique names for nodes and edges
-  #for saving them
+  # generate unique names for nodes and edges
+  # for saving them
   for n, node in enumerate(nodes):
-    node.set_name('node{}'.format(n))
+    node.set_name("node{}".format(n))
 
   for e, edge in enumerate(edges):
-    edge.set_name('edge{}'.format(e))
+    edge.set_name("edge{}".format(e))
 
-  with h5py.File(path, 'w') as net_file:
-    nodes_group = net_file.create_group('nodes')
-    node_names_group = net_file.create_group('node_names')
+  with h5py.File(path, "w") as net_file:
+    nodes_group = net_file.create_group("nodes")
+    node_names_group = net_file.create_group("node_names")
     node_names_group.create_dataset(
-        'names',
-        dtype=string_type,
-        data=np.array(list(old_node_names.values()), dtype=object))
+      "names",
+      dtype=string_type,
+      data=np.array(list(old_node_names.values()), dtype=object),
+    )
 
-    edges_group = net_file.create_group('edges')
-    edge_names_group = net_file.create_group('edge_names')
+    edges_group = net_file.create_group("edges")
+    edge_names_group = net_file.create_group("edge_names")
     edge_names_group.create_dataset(
-        'names',
-        dtype=string_type,
-        data=np.array(list(old_edge_names.values()), dtype=object))
+      "names",
+      dtype=string_type,
+      data=np.array(list(old_edge_names.values()), dtype=object),
+    )
 
     for n, node in enumerate(nodes):
       node_group = nodes_group.create_group(node.name)
@@ -79,7 +83,7 @@ def save_nodes(nodes: List[AbstractNode], path: Union[str, BinaryIO]) -> None:
           edge._save_edge(edge_group)
           edges.remove(edge)
 
-  #name edges and nodes back  to their original names
+  # name edges and nodes back  to their original names
   for n, node in enumerate(nodes):
     nodes[n].set_name(old_node_names[n])
 
@@ -97,20 +101,20 @@ def load_nodes(path: str) -> List[AbstractNode]:
   """
   nodes_list = []
   edges_list = []
-  with h5py.File(path, 'r') as net_file:
+  with h5py.File(path, "r") as net_file:
     nodes = list(net_file["nodes"].keys())
     node_names = {
-        'node{}'.format(n): v for n, v in enumerate(
-            net_file["node_names"]['names'].asstr(STRING_ENCODING)[()])#pylint: disable=no-member
+      "node{}".format(n): v
+      for n, v in enumerate(net_file["node_names"]["names"].asstr(STRING_ENCODING)[()])  # pylint: disable=no-member
     }
     edge_names = {
-        'edge{}'.format(n): v for n, v in enumerate(
-            net_file["edge_names"]['names'].asstr(STRING_ENCODING)[()])#pylint: disable=no-member
+      "edge{}".format(n): v
+      for n, v in enumerate(net_file["edge_names"]["names"].asstr(STRING_ENCODING)[()])  # pylint: disable=no-member
     }
     edges = list(net_file["edges"].keys())
     for node_name in nodes:
       node_data = net_file["nodes/" + node_name]
-      node_type = get_component(node_data['type'].asstr()[()])
+      node_type = get_component(node_data["type"].asstr()[()])
       nodes_list.append(node_type._load_node(node_data=node_data))
     nodes_dict = {node.name: node for node in nodes_list}
     for edge in edges:
@@ -124,9 +128,10 @@ def load_nodes(path: str) -> List[AbstractNode]:
 
   return nodes_list
 
+
 def from_topology(topology, tensors, backend=None):
   """Create and connect new `tn.Node`s by the given einsum-like topology.
-  
+
   Example:
     ```
     a, b, c = tn.from_topology("xy,yz,zx", [a, b, c])

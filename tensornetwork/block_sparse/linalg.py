@@ -14,16 +14,27 @@
 
 import numpy as np
 from tensornetwork.block_sparse.index import Index
-from tensornetwork.block_sparse.blocksparsetensor import (BlockSparseTensor,
-                                                          ChargeArray,
-                                                          tensordot)
-from tensornetwork.block_sparse.utils import (intersect, flatten,
-                                              get_real_dtype, _randn, _random)
+from tensornetwork.block_sparse.blocksparsetensor import (
+  BlockSparseTensor,
+  ChargeArray,
+  tensordot,
+)
+from tensornetwork.block_sparse.utils import (
+  intersect,
+  flatten,
+  get_real_dtype,
+  _randn,
+  _random,
+)
 from tensornetwork.block_sparse.blocksparse_utils import (
-    _find_transposed_diagonal_sparse_blocks, _find_diagonal_sparse_blocks,
-    compute_num_nonzero, compute_sparse_lookup)
+  _find_transposed_diagonal_sparse_blocks,
+  _find_diagonal_sparse_blocks,
+  compute_num_nonzero,
+  compute_sparse_lookup,
+)
 from typing import List, Union, Any, Tuple, Type, Optional, Text, Sequence
 from tensornetwork.block_sparse.initialization import empty_like
+
 
 def norm(tensor: BlockSparseTensor) -> float:
   """
@@ -34,76 +45,87 @@ def norm(tensor: BlockSparseTensor) -> float:
 
 def diag(tensor: ChargeArray) -> Any:
   """
-  Return a diagonal `BlockSparseTensor` from a `ChargeArray`, or 
+  Return a diagonal `BlockSparseTensor` from a `ChargeArray`, or
   return the diagonal of a `BlockSparseTensor` as a `ChargeArray`.
   For input of type `BlockSparseTensor`:
-    The full diagonal is obtained from finding the diagonal blocks of the 
+    The full diagonal is obtained from finding the diagonal blocks of the
     `BlockSparseTensor`, taking the diagonal elements of those and packing
-    the result into a ChargeArray. Note that the computed diagonal elements 
-    are usually different from the  diagonal elements obtained from 
+    the result into a ChargeArray. Note that the computed diagonal elements
+    are usually different from the  diagonal elements obtained from
     converting the `BlockSparseTensor` to dense storage and taking the diagonal.
     Note that the flow of the resulting 1d `ChargeArray` object is `False`.
   Args:
     tensor: A `ChargeArray`.
   Returns:
-    ChargeArray: A 1d `CharggeArray` containing the diagonal of `tensor`, 
-      or a diagonal matrix of type `BlockSparseTensor` containing `tensor` 
+    ChargeArray: A 1d `CharggeArray` containing the diagonal of `tensor`,
+      or a diagonal matrix of type `BlockSparseTensor` containing `tensor`
       on its diagonal.
 
   """
   if tensor.ndim > 2:
-    raise ValueError("`diag` currently only implemented for matrices, "
-                     "found `ndim={}".format(tensor.ndim))
+    raise ValueError(
+      "`diag` currently only implemented for matrices, found `ndim={}".format(
+        tensor.ndim
+      )
+    )
   if not isinstance(tensor, BlockSparseTensor):
     if tensor.ndim > 1:
       raise ValueError(
-          "`diag` currently only implemented for `ChargeArray` with ndim=1, "
-          "found `ndim={}`".format(tensor.ndim))
+        "`diag` currently only implemented for `ChargeArray` with ndim=1, "
+        "found `ndim={}`".format(tensor.ndim)
+      )
     flat_charges = tensor._charges + tensor._charges
     flat_flows = list(tensor._flows) + list(np.logical_not(tensor._flows))
     flat_order = list(tensor.flat_order) + list(
-        np.asarray(tensor.flat_order) + len(tensor._charges))
+      np.asarray(tensor.flat_order) + len(tensor._charges)
+    )
     tr_partition = len(tensor._order[0])
     blocks, charges, shapes = _find_transposed_diagonal_sparse_blocks(
-        flat_charges, flat_flows, tr_partition, flat_order)
-    data = np.zeros(
-        np.int64(np.sum(np.prod(shapes, axis=0))), dtype=tensor.dtype)
-    lookup, unique, labels = compute_sparse_lookup(tensor._charges,
-                                                   tensor._flows, charges)
+      flat_charges, flat_flows, tr_partition, flat_order
+    )
+    data = np.zeros(np.int64(np.sum(np.prod(shapes, axis=0))), dtype=tensor.dtype)
+    lookup, unique, labels = compute_sparse_lookup(
+      tensor._charges, tensor._flows, charges
+    )
     for n, block in enumerate(blocks):
       label = labels[np.nonzero(unique == charges[n])[0][0]]
-      data[block] = np.ravel(
-          np.diag(tensor.data[np.nonzero(lookup == label)[0]]))
+      data[block] = np.ravel(np.diag(tensor.data[np.nonzero(lookup == label)[0]]))
 
     order = [
-        tensor._order[0],
-        list(np.asarray(tensor._order[0]) + len(tensor._charges))
+      tensor._order[0],
+      list(np.asarray(tensor._order[0]) + len(tensor._charges)),
     ]
     new_charges = [tensor._charges[0].copy(), tensor._charges[0].copy()]
     return BlockSparseTensor(
-        data,
-        charges=new_charges,
-        flows=list(tensor._flows) + list(np.logical_not(tensor._flows)),
-        order=order,
-        check_consistency=False)
+      data,
+      charges=new_charges,
+      flows=list(tensor._flows) + list(np.logical_not(tensor._flows)),
+      order=order,
+      check_consistency=False,
+    )
 
   flat_charges = tensor._charges
   flat_flows = tensor._flows
   flat_order = tensor.flat_order
   tr_partition = len(tensor._order[0])
-  sparse_blocks, charges, block_shapes = _find_transposed_diagonal_sparse_blocks(  #pylint: disable=line-too-long
-      flat_charges, flat_flows, tr_partition, flat_order)
+  sparse_blocks, charges, block_shapes = _find_transposed_diagonal_sparse_blocks(  # pylint: disable=line-too-long
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   shapes = np.min(block_shapes, axis=0)
   if len(sparse_blocks) > 0:
-    data = np.concatenate([
+    data = np.concatenate(
+      [
         np.diag(np.reshape(tensor.data[sparse_blocks[n]], block_shapes[:, n]))
         for n in range(len(sparse_blocks))
-    ])
-    charge_labels = np.concatenate([
+      ]
+    )
+    charge_labels = np.concatenate(
+      [
         np.full(shapes[n], fill_value=n, dtype=np.int16)
         for n in range(len(sparse_blocks))
-    ])
+      ]
+    )
 
   else:
     data = np.empty(0, dtype=tensor.dtype)
@@ -113,15 +135,14 @@ def diag(tensor: ChargeArray) -> Any:
   return ChargeArray(data, newcharges, flows)
 
 
-def reshape(tensor: ChargeArray, shape: Sequence[Union[Index,
-                                                       int]]) -> ChargeArray:
+def reshape(tensor: ChargeArray, shape: Sequence[Union[Index, int]]) -> ChargeArray:
   """
   Reshape `tensor` into `shape.
-  `ChargeArray.reshape` works the same as the dense 
-  version, with the notable exception that the tensor can only be 
-  reshaped into a form compatible with its elementary shape. 
+  `ChargeArray.reshape` works the same as the dense
+  version, with the notable exception that the tensor can only be
+  reshaped into a form compatible with its elementary shape.
   The elementary shape is the shape determined by ChargeArray._charges.
-  For example, while the following reshaping is possible for regular 
+  For example, while the following reshaping is possible for regular
   dense numpy tensor,
   ```
   A = np.random.rand(6,6,6)
@@ -141,10 +162,10 @@ def reshape(tensor: ChargeArray, shape: Sequence[Union[Index,
   ```
   raises a `ValueError` since (2,3,6,6)
   is incompatible with the elementary shape (6,6,6) of the tensor.
-  
+
   Args:
     tensor: A symmetric tensor.
-    shape: The new shape. Can either be a list of `Index` 
+    shape: The new shape. Can either be a list of `Index`
       or a list of `int`.
   Returns:
     ChargeArray: A new tensor reshaped into `shape`
@@ -155,7 +176,7 @@ def reshape(tensor: ChargeArray, shape: Sequence[Union[Index,
 
 def conj(tensor: ChargeArray) -> ChargeArray:
   """
-  Return the complex conjugate of `tensor` in a new 
+  Return the complex conjugate of `tensor` in a new
   `ChargeArray`.
   Args:
     tensor: A `ChargeArray` object.
@@ -165,9 +186,11 @@ def conj(tensor: ChargeArray) -> ChargeArray:
   return tensor.conj()
 
 
-def transpose(tensor: ChargeArray,
-              order: Sequence[int] = np.asarray([1, 0]),
-              shuffle: Optional[bool] = False) -> ChargeArray:
+def transpose(
+  tensor: ChargeArray,
+  order: Sequence[int] = np.asarray([1, 0]),
+  shuffle: Optional[bool] = False,
+) -> ChargeArray:
   """
   Transpose the tensor into the new order `order`. If `shuffle=False`
   no data-reshuffling is done.
@@ -180,13 +203,15 @@ def transpose(tensor: ChargeArray,
   return tensor.transpose(order, shuffle)
 
 
-def svd(matrix: BlockSparseTensor,
-        full_matrices: Optional[bool] = True,
-        compute_uv: Optional[bool] = True,
-        hermitian: Optional[bool] = False) -> Any:
+def svd(
+  matrix: BlockSparseTensor,
+  full_matrices: Optional[bool] = True,
+  compute_uv: Optional[bool] = True,
+  hermitian: Optional[bool] = False,
+) -> Any:
   """
   Compute the singular value decomposition of `matrix`.
-  The matrix if factorized into `u * s * vh`, with 
+  The matrix if factorized into `u * s * vh`, with
   `u` and `vh` the left and right singular vectors of `matrix`,
   and `s` its singular values.
   Args:
@@ -198,7 +223,7 @@ def svd(matrix: BlockSparseTensor,
     hermitian: If `True`, assume hermiticity of `matrix`.
   Returns:
     If `compute_uv` is `True`: Three BlockSparseTensors `U,S,V`.
-    If `compute_uv` is `False`: A BlockSparseTensors `S` containing the 
+    If `compute_uv` is `False`: A BlockSparseTensors `S` containing the
       singular values.
   """
 
@@ -210,15 +235,16 @@ def svd(matrix: BlockSparseTensor,
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, charges, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   u_blocks = []
   singvals = []
   v_blocks = []
   for n, block in enumerate(blocks):
     out = np.linalg.svd(
-        np.reshape(matrix.data[block], shapes[:, n]), full_matrices, compute_uv,
-        hermitian)
+      np.reshape(matrix.data[block], shapes[:, n]), full_matrices, compute_uv, hermitian
+    )
     if compute_uv:
       u_blocks.append(out[0])
       singvals.append(out[1])
@@ -228,13 +254,12 @@ def svd(matrix: BlockSparseTensor,
       singvals.append(out)
 
   tmp_labels = [
-      np.full(len(singvals[n]), fill_value=n, dtype=np.int16)
-      for n in range(len(singvals))
+    np.full(len(singvals[n]), fill_value=n, dtype=np.int16)
+    for n in range(len(singvals))
   ]
   if len(tmp_labels) > 0:
     left_singval_charge_labels = np.concatenate(tmp_labels)
   else:
-
     left_singval_charge_labels = np.empty(0, dtype=np.int16)
   left_singval_charge = charges[left_singval_charge_labels]
   if len(singvals) > 0:
@@ -244,10 +269,10 @@ def svd(matrix: BlockSparseTensor,
   S = ChargeArray(all_singvals, [left_singval_charge], [False])
 
   if compute_uv:
-    #define the new charges on the two central bonds
+    # define the new charges on the two central bonds
     tmp_left_labels = [
-        np.full(u_blocks[n].shape[1], fill_value=n, dtype=np.int16)
-        for n in range(len(u_blocks))
+      np.full(u_blocks[n].shape[1], fill_value=n, dtype=np.int16)
+      for n in range(len(u_blocks))
     ]
     if len(tmp_left_labels) > 0:
       left_charge_labels = np.concatenate(tmp_left_labels)
@@ -255,8 +280,8 @@ def svd(matrix: BlockSparseTensor,
       left_charge_labels = np.empty(0, dtype=np.int16)
 
     tmp_right_labels = [
-        np.full(v_blocks[n].shape[0], fill_value=n, dtype=np.int16)
-        for n in range(len(v_blocks))
+      np.full(v_blocks[n].shape[0], fill_value=n, dtype=np.int16)
+      for n in range(len(v_blocks))
     ]
     if len(tmp_right_labels) > 0:
       right_charge_labels = np.concatenate(tmp_right_labels)
@@ -265,12 +290,10 @@ def svd(matrix: BlockSparseTensor,
     new_left_charge = charges[left_charge_labels]
     new_right_charge = charges[right_charge_labels]
 
-    charges_u = [new_left_charge
-                ] + [matrix._charges[o] for o in matrix._order[0]]
+    charges_u = [new_left_charge] + [matrix._charges[o] for o in matrix._order[0]]
     order_u = [[0]] + [list(np.arange(1, len(matrix._order[0]) + 1))]
     flows_u = [True] + [matrix._flows[o] for o in matrix._order[0]]
-    charges_v = [new_right_charge
-                ] + [matrix._charges[o] for o in matrix._order[1]]
+    charges_v = [new_right_charge] + [matrix._charges[o] for o in matrix._order[1]]
     flows_v = [False] + [matrix._flows[o] for o in matrix._order[1]]
     order_v = [[0]] + [list(np.arange(1, len(matrix._order[1]) + 1))]
     # We fill in data into the transposed U
@@ -282,25 +305,31 @@ def svd(matrix: BlockSparseTensor,
       all_u_blocks = np.empty(0, dtype=matrix.dtype)
       all_v_blocks = np.empty(0, dtype=matrix.dtype)
 
-    return BlockSparseTensor(
+    return (
+      BlockSparseTensor(
         all_u_blocks,
         charges=charges_u,
         flows=flows_u,
         order=order_u,
-        check_consistency=False).transpose((1, 0)), S, BlockSparseTensor(
-            all_v_blocks,
-            charges=charges_v,
-            flows=flows_v,
-            order=order_v,
-            check_consistency=False)
+        check_consistency=False,
+      ).transpose((1, 0)),
+      S,
+      BlockSparseTensor(
+        all_v_blocks,
+        charges=charges_v,
+        flows=flows_v,
+        order=order_v,
+        check_consistency=False,
+      ),
+    )
 
   return S
 
 
-def qr(matrix: BlockSparseTensor, mode: Text = 'reduced') -> Any:
+def qr(matrix: BlockSparseTensor, mode: Text = "reduced") -> Any:
   """
   Compute the qr decomposition of an `M` by `N` matrix `matrix`.
-  The matrix is factorized into `q*r`, with 
+  The matrix is factorized into `q*r`, with
   `q` an orthogonal matrix and `r` an upper triangular matrix.
   Args:
     matrix: A matrix (i.e. a rank-2 tensor) of type  `BlockSparseTensor`
@@ -317,32 +346,32 @@ def qr(matrix: BlockSparseTensor, mode: Text = 'reduced') -> Any:
   """
   if matrix.ndim != 2:
     raise NotImplementedError("qr currently supports only rank-2 tensors.")
-  if mode not in ('reduced', 'complete', 'raw', 'r'):
-    raise ValueError('unknown value {} for input `mode`'.format(mode))
-  if mode == 'raw':
-    raise NotImplementedError('mode `raw` currenntly not supported')
+  if mode not in ("reduced", "complete", "raw", "r"):
+    raise ValueError("unknown value {} for input `mode`".format(mode))
+  if mode == "raw":
+    raise NotImplementedError("mode `raw` currenntly not supported")
 
   flat_charges = matrix._charges
   flat_flows = matrix._flows
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, charges, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   q_blocks = []
   r_blocks = []
   for n, block in enumerate(blocks):
     out = np.linalg.qr(np.reshape(matrix.data[block], shapes[:, n]), mode)
-    if mode in ('reduced', 'complete'):
+    if mode in ("reduced", "complete"):
       q_blocks.append(out[0])
       r_blocks.append(out[1])
     else:
       r_blocks.append(out)
 
-
   tmp_r_charge_labels = [
-      np.full(r_blocks[n].shape[0], fill_value=n, dtype=np.int16)
-      for n in range(len(r_blocks))
+    np.full(r_blocks[n].shape[0], fill_value=n, dtype=np.int16)
+    for n in range(len(r_blocks))
   ]
   if len(tmp_r_charge_labels) > 0:
     left_r_charge_labels = np.concatenate(tmp_r_charge_labels)
@@ -358,16 +387,17 @@ def qr(matrix: BlockSparseTensor, mode: Text = 'reduced') -> Any:
   else:
     all_r_blocks = np.empty(0, dtype=matrix.dtype)
   R = BlockSparseTensor(
-      all_r_blocks,
-      charges=charges_r,
-      flows=flows_r,
-      order=order_r,
-      check_consistency=False)
+    all_r_blocks,
+    charges=charges_r,
+    flows=flows_r,
+    order=order_r,
+    check_consistency=False,
+  )
 
-  if mode in ('reduced', 'complete'):
+  if mode in ("reduced", "complete"):
     tmp_right_q_charge_labels = [
-        np.full(q_blocks[n].shape[1], fill_value=n, dtype=np.int16)
-        for n in range(len(q_blocks))
+      np.full(q_blocks[n].shape[1], fill_value=n, dtype=np.int16)
+      for n in range(len(q_blocks))
     ]
     if len(tmp_right_q_charge_labels) > 0:
       right_q_charge_labels = np.concatenate(tmp_right_q_charge_labels)
@@ -376,7 +406,7 @@ def qr(matrix: BlockSparseTensor, mode: Text = 'reduced') -> Any:
 
     right_q_charge = charges[right_q_charge_labels]
     charges_q = [
-        right_q_charge,
+      right_q_charge,
     ] + [matrix._charges[o] for o in matrix._order[0]]
     order_q = [[0]] + [list(np.arange(1, len(matrix._order[0]) + 1))]
     flows_q = [True] + [matrix._flows[o] for o in matrix._order[0]]
@@ -385,15 +415,18 @@ def qr(matrix: BlockSparseTensor, mode: Text = 'reduced') -> Any:
     else:
       all_q_blocks = np.empty(0, dtype=matrix.dtype)
     return BlockSparseTensor(
-        all_q_blocks,
-        charges=charges_q,
-        flows=flows_q,
-        order=order_q,
-        check_consistency=False).transpose((1, 0)), R
+      all_q_blocks,
+      charges=charges_q,
+      flows=flows_q,
+      order=order_q,
+      check_consistency=False,
+    ).transpose((1, 0)), R
   return R
 
-def eigh(matrix: BlockSparseTensor,
-         UPLO: Optional[Text] = 'L') -> Tuple[ChargeArray, BlockSparseTensor]:
+
+def eigh(
+  matrix: BlockSparseTensor, UPLO: Optional[Text] = "L"
+) -> Tuple[ChargeArray, BlockSparseTensor]:
   """
   Compute the eigen decomposition of a hermitian `M` by `M` matrix `matrix`.
   Args:
@@ -411,7 +444,8 @@ def eigh(matrix: BlockSparseTensor,
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, charges, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   eigvals = []
   v_blocks = []
@@ -421,8 +455,7 @@ def eigh(matrix: BlockSparseTensor,
     v_blocks.append(v)
 
   tmp_labels = [
-      np.full(len(eigvals[n]), fill_value=n, dtype=np.int16)
-      for n in range(len(eigvals))
+    np.full(len(eigvals[n]), fill_value=n, dtype=np.int16) for n in range(len(eigvals))
   ]
   if len(tmp_labels) > 0:
     eigvalscharge_labels = np.concatenate(tmp_labels)
@@ -442,13 +475,14 @@ def eigh(matrix: BlockSparseTensor,
   else:
     all_v_blocks = np.empty(0, dtype=matrix.dtype)
   V = BlockSparseTensor(
-      all_v_blocks,
-      charges=charges_v,
-      flows=flows_v,
-      order=order_v,
-      check_consistency=False).transpose()
+    all_v_blocks,
+    charges=charges_v,
+    flows=flows_v,
+    order=order_v,
+    check_consistency=False,
+  ).transpose()
 
-  return E, V  #pytype: disable=bad-return-type
+  return E, V  # pytype: disable=bad-return-type
 
 
 def eig(matrix: BlockSparseTensor) -> Tuple[ChargeArray, BlockSparseTensor]:
@@ -469,7 +503,8 @@ def eig(matrix: BlockSparseTensor) -> Tuple[ChargeArray, BlockSparseTensor]:
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, charges, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   eigvals = []
   v_blocks = []
@@ -478,8 +513,7 @@ def eig(matrix: BlockSparseTensor) -> Tuple[ChargeArray, BlockSparseTensor]:
     eigvals.append(e)
     v_blocks.append(v)
   tmp_labels = [
-      np.full(len(eigvals[n]), fill_value=n, dtype=np.int16)
-      for n in range(len(eigvals))
+    np.full(len(eigvals[n]), fill_value=n, dtype=np.int16) for n in range(len(eigvals))
   ]
   if len(tmp_labels) > 0:
     eigvalscharge_labels = np.concatenate(tmp_labels)
@@ -503,13 +537,14 @@ def eig(matrix: BlockSparseTensor) -> Tuple[ChargeArray, BlockSparseTensor]:
     all_v_blocks = np.empty(0, dtype=matrix.dtype)
 
   V = BlockSparseTensor(
-      all_v_blocks,
-      charges=charges_v,
-      flows=flows_v,
-      order=order_v,
-      check_consistency=False).transpose()
+    all_v_blocks,
+    charges=charges_v,
+    flows=flows_v,
+    order=order_v,
+    check_consistency=False,
+  ).transpose()
 
-  return E, V  #pytype: disable=bad-return-type
+  return E, V  # pytype: disable=bad-return-type
 
 
 def inv(matrix: BlockSparseTensor) -> BlockSparseTensor:
@@ -519,44 +554,51 @@ def inv(matrix: BlockSparseTensor) -> BlockSparseTensor:
     BlockSparseTensor: The inverse of `matrix`.
   """
   if matrix.ndim != 2:
-    raise ValueError("`inv` can only be taken for matrices, "
-                     "found tensor.ndim={}".format(matrix.ndim))
+    raise ValueError(
+      "`inv` can only be taken for matrices, found tensor.ndim={}".format(matrix.ndim)
+    )
   flat_charges = matrix._charges
   flat_flows = matrix._flows
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, _, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   data = np.empty(np.sum(np.prod(shapes, axis=0)), dtype=matrix.dtype)
   for n, block in enumerate(blocks):
     data[block] = np.ravel(
-        np.linalg.inv(np.reshape(matrix.data[block], shapes[:, n])).T)
-  #pylint: disable=line-too-long
+      np.linalg.inv(np.reshape(matrix.data[block], shapes[:, n])).T
+    )
+  # pylint: disable=line-too-long
   return BlockSparseTensor(
-      data=data,
-      charges=matrix._charges,
-      flows=np.logical_not(matrix._flows),
-      order=matrix._order,
-      check_consistency=False).transpose((1, 0))  #pytype: disable=bad-return-type
+    data=data,
+    charges=matrix._charges,
+    flows=np.logical_not(matrix._flows),
+    order=matrix._order,
+    check_consistency=False,
+  ).transpose((1, 0))  # pytype: disable=bad-return-type
 
 
 def sqrt(
-    tensor: Union[BlockSparseTensor, ChargeArray]
+  tensor: Union[BlockSparseTensor, ChargeArray],
 ) -> Union[ChargeArray, BlockSparseTensor]:
   obj = tensor.__new__(type(tensor))
   obj.__init__(
-      np.sqrt(tensor.data),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    np.sqrt(tensor.data),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )
   return obj
 
 
-def eye(column_index: Index,
-        row_index: Optional[Index] = None,
-        dtype: Optional[Type[np.number]] = None) -> BlockSparseTensor:
+def eye(
+  column_index: Index,
+  row_index: Optional[Index] = None,
+  dtype: Optional[Type[np.number]] = None,
+) -> BlockSparseTensor:
   """
   Return an identity matrix.
   Args:
@@ -572,28 +614,33 @@ def eye(column_index: Index,
     dtype = np.float64
 
   blocks, _, shapes = _find_diagonal_sparse_blocks(
-      column_index.flat_charges + row_index.flat_charges,
-      column_index.flat_flows + row_index.flat_flows,
-      len(column_index.flat_charges))
+    column_index.flat_charges + row_index.flat_charges,
+    column_index.flat_flows + row_index.flat_flows,
+    len(column_index.flat_charges),
+  )
   data = np.empty(np.int64(np.sum(np.prod(shapes, axis=0))), dtype=dtype)
   for n, block in enumerate(blocks):
     data[block] = np.ravel(np.eye(shapes[0, n], shapes[1, n], dtype=dtype))
   order = [list(np.arange(0, len(column_index.flat_charges)))] + [
-      list(
-          np.arange(
-              len(column_index.flat_charges),
-              len(column_index.flat_charges) + len(row_index.flat_charges)))
+    list(
+      np.arange(
+        len(column_index.flat_charges),
+        len(column_index.flat_charges) + len(row_index.flat_charges),
+      )
+    )
   ]
   return BlockSparseTensor(
-      data=data,
-      charges=column_index.flat_charges + row_index.flat_charges,
-      flows=column_index.flat_flows + row_index.flat_flows,
-      order=order,
-      check_consistency=False)
+    data=data,
+    charges=column_index.flat_charges + row_index.flat_charges,
+    flows=column_index.flat_flows + row_index.flat_flows,
+    order=order,
+    check_consistency=False,
+  )
 
 
-def trace(tensor: BlockSparseTensor,
-          axes: Optional[Sequence[int]] = None) -> BlockSparseTensor:
+def trace(
+  tensor: BlockSparseTensor, axes: Optional[Sequence[int]] = None
+) -> BlockSparseTensor:
   """
   Compute the trace of a matrix or tensor. If input has `ndim>2`, take
   the trace over the last two dimensions.
@@ -609,22 +656,23 @@ def trace(tensor: BlockSparseTensor,
       axes = (tensor.ndim - 2, tensor.ndim - 1)
     if len(axes) != 2:
       raise ValueError(f"`len(axes)` has to be 2, found `axes = {axes}`")
-    if not np.array_equal(tensor.flows[axes[0]],
-                          np.logical_not(tensor.flows[axes[1]])):
-      raise ValueError(
-          f"trace indices for axes {axes} have non-matching flows.")
+    if not np.array_equal(tensor.flows[axes[0]], np.logical_not(tensor.flows[axes[1]])):
+      raise ValueError(f"trace indices for axes {axes} have non-matching flows.")
 
     sparse_shape = tensor.sparse_shape
     if sparse_shape[axes[0]].copy().flip_flow() != sparse_shape[axes[1]]:
       raise ValueError(f"trace indices for axes {axes} are not matching")
 
-    #flatten the shape of `tensor`
+    # flatten the shape of `tensor`
     out = tensor.reshape(
-        flatten([[tensor._charges[n].dim for n in o] for o in tensor._order]))
+      flatten([[tensor._charges[n].dim for n in o] for o in tensor._order])
+    )
     _, _, labels0 = np.intersect1d(
-        tensor._order[axes[0]], flatten(out._order), return_indices=True)
+      tensor._order[axes[0]], flatten(out._order), return_indices=True
+    )
     _, _, labels1 = np.intersect1d(
-        tensor._order[axes[1]], flatten(out._order), return_indices=True)
+      tensor._order[axes[1]], flatten(out._order), return_indices=True
+    )
 
     a0 = list(labels0[np.argsort(tensor._order[axes[0]])])
     a1 = list(labels1[np.argsort(tensor._order[axes[1]])])
@@ -633,10 +681,12 @@ def trace(tensor: BlockSparseTensor,
       i = a0.pop(0)
       j = a1.pop(0)
       identity = eye(
-          Index([out._charges[out._order[i][0]]],
-                [not out._flows[out._order[i][0]]]))
-      #pylint: disable=line-too-long
-      out = tensordot(out, identity, ([i, j], [0, 1]))  # pytype: disable=wrong-arg-types
+        Index([out._charges[out._order[i][0]]], [not out._flows[out._order[i][0]]])
+      )
+      # pylint: disable=line-too-long
+      out = tensordot(
+        out, identity, ([i, j], [0, 1])
+      )  # pytype: disable=wrong-arg-types
       a0ar = np.asarray(a0)
 
       mask_min = a0ar > np.min([i, j])
@@ -657,9 +707,11 @@ def trace(tensor: BlockSparseTensor,
   raise ValueError("trace can only be taken for tensors with ndim > 1")
 
 
-def pinv(matrix: BlockSparseTensor,
-         rcond: Optional[float] = 1E-15,
-         hermitian: Optional[bool] = False) -> BlockSparseTensor:
+def pinv(
+  matrix: BlockSparseTensor,
+  rcond: Optional[float] = 1e-15,
+  hermitian: Optional[bool] = False,
+) -> BlockSparseTensor:
   """
   Compute the Moore-Penrose pseudo inverse of `matrix`.
   Args:
@@ -668,35 +720,40 @@ def pinv(matrix: BlockSparseTensor,
     BlockSparseTensor: The pseudo inverse of `matrix`.
   """
   if matrix.ndim != 2:
-    raise ValueError("`pinv` can only be taken for matrices, "
-                     "found tensor.ndim={}".format(matrix.ndim))
+    raise ValueError(
+      "`pinv` can only be taken for matrices, found tensor.ndim={}".format(matrix.ndim)
+    )
 
   flat_charges = matrix._charges
   flat_flows = matrix._flows
   flat_order = matrix.flat_order
   tr_partition = len(matrix._order[0])
   blocks, _, shapes = _find_transposed_diagonal_sparse_blocks(
-      flat_charges, flat_flows, tr_partition, flat_order)
+    flat_charges, flat_flows, tr_partition, flat_order
+  )
 
   data = np.empty(np.sum(np.prod(shapes, axis=0)), dtype=matrix.dtype)
   for n, block in enumerate(blocks):
     data[block] = np.ravel(
-        np.linalg.pinv(
-            np.reshape(matrix.data[block], shapes[:, n]),
-            rcond=rcond,
-            hermitian=hermitian).T)
-  #pylint: disable=line-too-long
+      np.linalg.pinv(
+        np.reshape(matrix.data[block], shapes[:, n]), rcond=rcond, hermitian=hermitian
+      ).T
+    )
+  # pylint: disable=line-too-long
   return BlockSparseTensor(
-      data=data,
-      charges=matrix._charges,
-      flows=np.logical_not(matrix._flows),
-      order=matrix._order,
-      check_consistency=False).transpose((1, 0)) #pytype: disable=bad-return-type
+    data=data,
+    charges=matrix._charges,
+    flows=np.logical_not(matrix._flows),
+    order=matrix._order,
+    check_consistency=False,
+  ).transpose((1, 0))  # pytype: disable=bad-return-type
 
-def abs(tensor: BlockSparseTensor) -> BlockSparseTensor: #pylint: disable=redefined-builtin
+
+def abs(tensor: BlockSparseTensor) -> BlockSparseTensor:  # pylint: disable=redefined-builtin
   result = empty_like(tensor)
   result.data = np.abs(tensor.data)
   return result
+
 
 def sign(tensor: BlockSparseTensor) -> BlockSparseTensor:
   result = empty_like(tensor)

@@ -19,7 +19,6 @@ from tensornetwork.backends.numpy import decompositions
 
 
 class DecompositionsTest(tf.test.TestCase):
-
   def test_expected_shapes(self):
     val = np.zeros((2, 3, 4, 5))
     u, s, vh, _ = decompositions.svd(np, val, 2)
@@ -57,8 +56,7 @@ class DecompositionsTest(tf.test.TestCase):
     unitary1, _, unitary2 = np.linalg.svd(random_matrix)
     singular_values = np.array(range(10))
     val = unitary1.dot(np.diag(singular_values).dot(unitary2.T))
-    u, s, vh, trun = decompositions.svd(
-        np, val, 1, max_singular_values=7)
+    u, s, vh, trun = decompositions.svd(np, val, 1, max_singular_values=7)
     self.assertEqual(u.shape, (10, 7))
     self.assertEqual(s.shape, (7,))
     self.assertAllClose(s, np.arange(9, 2, -1))
@@ -70,8 +68,7 @@ class DecompositionsTest(tf.test.TestCase):
     unitary1, _, unitary2 = np.linalg.svd(random_matrix, full_matrices=False)
     singular_values = np.array(range(6))
     val = unitary1.dot(np.diag(singular_values).dot(unitary2.T))
-    u, s, vh, _ = decompositions.svd(
-        np, val, 1, max_singular_values=30)
+    u, s, vh, _ = decompositions.svd(np, val, 1, max_singular_values=30)
     self.assertEqual(u.shape, (10, 6))
     self.assertEqual(s.shape, (6,))
     self.assertEqual(vh.shape, (6, 6))
@@ -81,8 +78,7 @@ class DecompositionsTest(tf.test.TestCase):
     unitary1, _, unitary2 = np.linalg.svd(random_matrix)
     singular_values = np.array(range(10))
     val = unitary1.dot(np.diag(singular_values).dot(unitary2.T))
-    u, s, vh, trun = decompositions.svd(
-        np, val, 1, max_truncation_error=math.sqrt(5.1))
+    u, s, vh, trun = decompositions.svd(np, val, 1, max_truncation_error=math.sqrt(5.1))
     self.assertEqual(u.shape, (10, 7))
     self.assertEqual(s.shape, (7,))
     self.assertAllClose(s, np.arange(9, 2, -1))
@@ -94,16 +90,14 @@ class DecompositionsTest(tf.test.TestCase):
     relative = np.diag([2.0, 1.0, 0.2, 0.1])
     max_truncation_err = 0.2
     _, _, _, trunc_sv_absolute = decompositions.svd(
-        np,
-        absolute,
-        1,
-        max_truncation_error=max_truncation_err,
-        relative=False)
+      np, absolute, 1, max_truncation_error=max_truncation_err, relative=False
+    )
     _, _, _, trunc_sv_relative = decompositions.svd(
-        np, relative, 1, max_truncation_error=max_truncation_err, relative=True)
+      np, relative, 1, max_truncation_error=max_truncation_err, relative=True
+    )
     np.testing.assert_almost_equal(trunc_sv_absolute, [0.1])
     np.testing.assert_almost_equal(trunc_sv_relative, [0.2, 0.1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   tf.test.main()

@@ -15,16 +15,18 @@
 
 from typing import Optional, Any, Tuple
 import numpy
+
 Tensor = Any
 
 
 def svd(
-    np,  # TODO: Typing
-    tensor: Tensor,
-    pivot_axis: int,
-    max_singular_values: Optional[int] = None,
-    max_truncation_error: Optional[float] = None,
-    relative: Optional[bool] = False) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+  np,  # TODO: Typing
+  tensor: Tensor,
+  pivot_axis: int,
+  max_singular_values: Optional[int] = None,
+  max_truncation_error: Optional[float] = None,
+  relative: Optional[bool] = False,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
   """Computes the singular value decomposition (SVD) of a tensor.
 
   See tensornetwork.backends.tensorflow.decompositions for details.
@@ -50,7 +52,8 @@ def svd(
     # We must keep at least this many singular values to ensure the
     # truncation error is <= abs_max_truncation_error.
     num_sing_vals_err = np.count_nonzero(
-        (trunc_errs > abs_max_truncation_error).astype(np.int32))
+      (trunc_errs > abs_max_truncation_error).astype(np.int32)
+    )
   else:
     num_sing_vals_err = max_singular_values
 
@@ -75,10 +78,10 @@ def svd(
 
 
 def qr(
-    np,  # TODO: Typing
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool
+  np,  # TODO: Typing
+  tensor: Tensor,
+  pivot_axis: int,
+  non_negative_diagonal: bool,
 ) -> Tuple[Tensor, Tensor]:
   """Computes the QR decomposition of a tensor.
 
@@ -99,10 +102,10 @@ def qr(
 
 
 def rq(
-    np,  # TODO: Typing
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool
+  np,  # TODO: Typing
+  tensor: Tensor,
+  pivot_axis: int,
+  non_negative_diagonal: bool,
 ) -> Tuple[Tensor, Tensor]:
   """Computes the RQ (reversed QR) decomposition of a tensor.
 
@@ -116,8 +119,7 @@ def rq(
     phases = np.sign(np.diagonal(r))
     q = q * phases
     r = phases.conj()[:, None] * r
-  r, q = np.conj(np.transpose(r)), np.conj(
-      np.transpose(q))  #M=r*q at this point
+  r, q = np.conj(np.transpose(r)), np.conj(np.transpose(q))  # M=r*q at this point
   center_dim = r.shape[1]
   r = np.reshape(r, list(left_dims) + [center_dim])
   q = np.reshape(q, [center_dim] + list(right_dims))

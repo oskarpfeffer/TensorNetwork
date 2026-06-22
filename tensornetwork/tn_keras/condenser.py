@@ -11,7 +11,7 @@ import math
 
 
 # pytype: disable=module-attr
-@tf.keras.utils.register_keras_serializable(package='tensornetwork')# pylint: disable=no-member
+@tf.keras.utils.register_keras_serializable(package="tensornetwork")  # pylint: disable=no-member
 # pytype: enable=module-attr
 class DenseCondenser(Layer):
   """Condenser TN layer. Greatly reduces dimensionality of input.
@@ -37,9 +37,9 @@ class DenseCondenser(Layer):
       # After the first layer, you don't need to specify
       # the size of the input anymore:
       model.add(
-        DenseCondenser(exp_base=2, 
-                       num_nodes=3, 
-                       use_bias=True, 
+        DenseCondenser(exp_base=2,
+                       num_nodes=3,
+                       use_bias=True,
                        activation='relu'))
 
   Args:
@@ -62,17 +62,19 @@ class DenseCondenser(Layer):
                                               (exp_base**num_nodes))`.
   """
 
-  def __init__(self,
-               exp_base: int,
-               num_nodes: int,
-               use_bias: Optional[bool] = True,
-               activation: Optional[Text] = None,
-               kernel_initializer: Optional[Text] = 'glorot_uniform',
-               bias_initializer: Optional[Text] = 'zeros',
-               **kwargs) -> None:
+  def __init__(
+    self,
+    exp_base: int,
+    num_nodes: int,
+    use_bias: Optional[bool] = True,
+    activation: Optional[Text] = None,
+    kernel_initializer: Optional[Text] = "glorot_uniform",
+    bias_initializer: Optional[Text] = "zeros",
+    **kwargs,
+  ) -> None:
 
-    if 'input_shape' not in kwargs and 'input_dim' in kwargs:
-      kwargs['input_shape'] = (kwargs.pop('input_dim'),)
+    if "input_shape" not in kwargs and "input_dim" in kwargs:
+      kwargs["input_shape"] = (kwargs.pop("input_dim"),)
 
     super().__init__(**kwargs)
 
@@ -88,8 +90,9 @@ class DenseCondenser(Layer):
     # Disable the attribute-defined-outside-init violations in this function
     # pylint: disable=attribute-defined-outside-init
     if input_shape[-1] is None:
-      raise ValueError('The last dimension of the inputs to `Dense` '
-                       'should be defined. Found `None`.')
+      raise ValueError(
+        "The last dimension of the inputs to `Dense` should be defined. Found `None`."
+      )
 
     super().build(input_shape)
 
@@ -97,25 +100,39 @@ class DenseCondenser(Layer):
 
     for i in range(self.num_nodes):
       self.nodes.append(
-          self.add_weight(name=f'node_{i}',
-                          shape=(self.output_dim, self.exp_base,
-                                 self.output_dim),
-                          trainable=True,
-                          initializer=self.kernel_initializer))
+        self.add_weight(
+          name=f"node_{i}",
+          shape=(self.output_dim, self.exp_base, self.output_dim),
+          trainable=True,
+          initializer=self.kernel_initializer,
+        )
+      )
 
-    self.bias_var = self.add_weight(
-        name='bias',
+    self.bias_var = (
+      self.add_weight(
+        name="bias",
         shape=(self.output_dim,),
         trainable=True,
-        initializer=self.bias_initializer) if self.use_bias else None
+        initializer=self.bias_initializer,
+      )
+      if self.use_bias
+      else None
+    )
 
   def call(self, inputs: tf.Tensor, **kwargs) -> tf.Tensor:  # pylint: disable=unused-argument, arguments-differ
 
-    def f(x: tf.Tensor, nodes: List[Node], output_dim: int, exp_base: int,
-          num_nodes: int, use_bias: bool, bias_var: tf.Tensor) -> tf.Tensor:
+    def f(
+      x: tf.Tensor,
+      nodes: List[Node],
+      output_dim: int,
+      exp_base: int,
+      num_nodes: int,
+      use_bias: bool,
+      bias_var: tf.Tensor,
+    ) -> tf.Tensor:
 
       input_reshaped = tf.reshape(x, (exp_base,) * num_nodes + (output_dim,))
-      state_node = tn.Node(input_reshaped, name='xnode', backend="tensorflow")
+      state_node = tn.Node(input_reshaped, name="xnode", backend="tensorflow")
 
       # The TN will be connected like this:
       #      xxxxxxxxx
@@ -129,7 +146,7 @@ class DenseCondenser(Layer):
       #        |
 
       for i in range(num_nodes):
-        op = tn.Node(nodes[i], name=f'node_{i}', backend="tensorflow")
+        op = tn.Node(nodes[i], name=f"node_{i}", backend="tensorflow")
         tn.connect(state_node.edges[-1], op[0])
         tn.connect(state_node.edges[-2], op[1])
         state_node = tn.contract_between(state_node, op)
@@ -143,11 +160,27 @@ class DenseCondenser(Layer):
     input_shape = list(inputs.shape)
     inputs = tf.reshape(inputs, (-1, input_shape[-1]))
     result = tf.vectorized_map(
-        lambda vec: f(vec, self.nodes, self.output_dim, self.exp_base, self.
-                      num_nodes, self.use_bias, self.bias_var), inputs)
+      lambda vec: f(
+        vec,
+        self.nodes,
+        self.output_dim,
+        self.exp_base,
+        self.num_nodes,
+        self.use_bias,
+        self.bias_var,
+      ),
+      inputs,
+    )
     if self.activation is not None:
       result = self.activation(result)
-    result = tf.reshape(result, [-1] + input_shape[1:-1] + [self.output_dim,])
+    result = tf.reshape(
+      result,
+      [-1]
+      + input_shape[1:-1]
+      + [
+        self.output_dim,
+      ],
+    )
     return result
 
   def compute_output_shape(self, input_shape: List[int]) -> Tuple[int, int]:
@@ -165,18 +198,17 @@ class DenseCondenser(Layer):
     config = {}
 
     # Include the Condenser-specific arguments
-    args = ['exp_base', 'num_nodes', 'use_bias']
+    args = ["exp_base", "num_nodes", "use_bias"]
     for arg in args:
       config[arg] = getattr(self, arg)
 
     # Serialize the activation
-    config['activation'] = activations.serialize(getattr(self, 'activation'))
+    config["activation"] = activations.serialize(getattr(self, "activation"))
 
     # Serialize the initializers
-    initializers_list = ['kernel_initializer', 'bias_initializer']
+    initializers_list = ["kernel_initializer", "bias_initializer"]
     for initializer_arg in initializers_list:
-      config[initializer_arg] = initializers.serialize(
-          getattr(self, initializer_arg))
+      config[initializer_arg] = initializers.serialize(getattr(self, initializer_arg))
 
     # Get base config
     base_config = super().get_config()

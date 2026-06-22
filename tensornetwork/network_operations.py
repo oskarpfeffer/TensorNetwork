@@ -14,23 +14,39 @@
 """Implementation of TensorNetwork structure."""
 
 import collections
-from typing import (Any, Dict, List, Optional, Set, Text, Tuple, Union,
-                    Sequence, Iterable, Type)
+from typing import (
+  Any,
+  Dict,
+  List,
+  Optional,
+  Set,
+  Text,
+  Tuple,
+  Union,
+  Sequence,
+  Iterable,
+  Type,
+)
 import numpy as np
 import json
 
-#pylint: disable=useless-import-alias
-from tensornetwork.network_components import (AbstractNode, Node, CopyNode,
-                                              Edge, disconnect,
-                                              outer_product_final_nodes)
+# pylint: disable=useless-import-alias
+from tensornetwork.network_components import (
+  AbstractNode,
+  Node,
+  CopyNode,
+  Edge,
+  disconnect,
+  outer_product_final_nodes,
+)
 from tensornetwork.backends import backend_factory
 from tensornetwork.backends.abstract_backend import AbstractBackend
 from tensornetwork.network_components import connect, contract_parallel
+
 Tensor = Any
 
 
-def copy(nodes: Iterable[AbstractNode],
-         conjugate: bool = False) -> Tuple[dict, dict]:
+def copy(nodes: Iterable[AbstractNode], conjugate: bool = False) -> Tuple[dict, dict]:
   """Copy the given nodes and their edges.
 
   This will return a tuple linking original nodes/edges to their copies.
@@ -83,8 +99,9 @@ def copy(nodes: Iterable[AbstractNode],
   return node_dict, edge_dict
 
 
-def replicate_nodes(nodes: Iterable[AbstractNode],
-                    conjugate: bool = False) -> List[AbstractNode]:
+def replicate_nodes(
+  nodes: Iterable[AbstractNode], conjugate: bool = False
+) -> List[AbstractNode]:
   """Copy the given nodes and their edges.
 
   If nodes A and B are connected but only A is passed in to be
@@ -128,23 +145,23 @@ def remove_node(node: AbstractNode) -> Tuple[Dict[Text, Edge], Dict[int, Edge]]:
 
 
 def split_node(
-    node: AbstractNode,
-    left_edges: List[Edge],
-    right_edges: List[Edge],
-    max_singular_values: Optional[int] = None,
-    max_truncation_err: Optional[float] = None,
-    relative: Optional[bool] = False,
-    left_name: Optional[Text] = None,
-    right_name: Optional[Text] = None,
-    edge_name: Optional[Text] = None,
+  node: AbstractNode,
+  left_edges: List[Edge],
+  right_edges: List[Edge],
+  max_singular_values: Optional[int] = None,
+  max_truncation_err: Optional[float] = None,
+  relative: Optional[bool] = False,
+  left_name: Optional[Text] = None,
+  right_name: Optional[Text] = None,
+  edge_name: Optional[Text] = None,
 ) -> Tuple[AbstractNode, AbstractNode, Tensor]:
   """Split a `node` using Singular Value Decomposition.
 
-  Let :math:`M` be the matrix created by flattening `left_edges` and 
-  `right_edges` into 2 axes. 
-  Let :math:`U S V^* = M` be the SVD of :math:`M`. 
-  This will split the network into 2 nodes. 
-  The left node's tensor will be :math:`U \\sqrt{S}` 
+  Let :math:`M` be the matrix created by flattening `left_edges` and
+  `right_edges` into 2 axes.
+  Let :math:`U S V^* = M` be the SVD of :math:`M`.
+  This will split the network into 2 nodes.
+  The left node's tensor will be :math:`U \\sqrt{S}`
   and the right node's tensor will be
   :math:`\\sqrt{S} V^*` where :math:`V^*` is the adjoint of :math:`V`.
 
@@ -173,7 +190,7 @@ def split_node(
     max_singular_values: The maximum number of singular values to keep.
     max_truncation_err: The maximum allowed truncation error.
     relative: Multiply `max_truncation_err` with the largest singular value.
-    left_name: The name of the new left node. If `None`, a name will be 
+    left_name: The name of the new left node. If `None`, a name will be
       generated automatically.
     right_name: The name of the new right node. If `None`, a name will be
       generated automatically.
@@ -195,19 +212,24 @@ def split_node(
     AttributeError: If `node` has no backend attribute
   """
 
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
 
   if node.axis_names and edge_name:
     left_axis_names = []
     right_axis_names = [edge_name]
     for edge in left_edges:
-      left_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                             else node.axis_names[edge.axis2])
+      left_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     for edge in right_edges:
-      right_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                              else node.axis_names[edge.axis2])
+      right_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     left_axis_names.append(edge_name)
   else:
     left_axis_names = None
@@ -216,34 +238,30 @@ def split_node(
   backend = node.backend
   transp_tensor = node.tensor_from_edge_order(left_edges + right_edges)
 
-  u, s, vh, trun_vals = backend.svd(transp_tensor,
-                                    len(left_edges),
-                                    max_singular_values,
-                                    max_truncation_err,
-                                    relative=relative)
+  u, s, vh, trun_vals = backend.svd(
+    transp_tensor,
+    len(left_edges),
+    max_singular_values,
+    max_truncation_err,
+    relative=relative,
+  )
   sqrt_s = backend.sqrt(s)
   u_s = backend.broadcast_right_multiplication(u, sqrt_s)
   vh_s = backend.broadcast_left_multiplication(sqrt_s, vh)
 
-  left_node = Node(u_s,
-                   name=left_name,
-                   axis_names=left_axis_names,
-                   backend=backend)
+  left_node = Node(u_s, name=left_name, axis_names=left_axis_names, backend=backend)
 
   left_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
   ]
   for i, edge in enumerate(left_edges):
     left_node.add_edge(edge, i)
     edge.update_axis(left_axes_order[i], node, i, left_node)
 
-  right_node = Node(vh_s,
-                    name=right_name,
-                    axis_names=right_axis_names,
-                    backend=backend)
+  right_node = Node(vh_s, name=right_name, axis_names=right_axis_names, backend=backend)
 
   right_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
   ]
   for i, edge in enumerate(right_edges):
     # i + 1 to account for the new edge.
@@ -256,17 +274,17 @@ def split_node(
 
 
 def split_node_qr(
-    node: AbstractNode,
-    left_edges: List[Edge],
-    right_edges: List[Edge],
-    left_name: Optional[Text] = None,
-    right_name: Optional[Text] = None,
-    edge_name: Optional[Text] = None,
+  node: AbstractNode,
+  left_edges: List[Edge],
+  right_edges: List[Edge],
+  left_name: Optional[Text] = None,
+  right_name: Optional[Text] = None,
+  edge_name: Optional[Text] = None,
 ) -> Tuple[AbstractNode, AbstractNode]:
   """Split a `node` using QR decomposition.
 
-  Let :math:`M` be the matrix created by 
-  flattening `left_edges` and `right_edges` into 2 axes. 
+  Let :math:`M` be the matrix created by
+  flattening `left_edges` and `right_edges` into 2 axes.
   Let :math:`QR = M` be the QR Decomposition of :math:`M`.
   This will split the network into 2 nodes.
   The `left node`'s tensor will be :math:`Q` (an orthonormal matrix)
@@ -295,19 +313,24 @@ def split_node_qr(
     AttributeError: If `node` has no backend attribute
   """
 
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
 
   if node.axis_names and edge_name:
     left_axis_names = []
     right_axis_names = [edge_name]
     for edge in left_edges:
-      left_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                             else node.axis_names[edge.axis2])
+      left_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     for edge in right_edges:
-      right_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                              else node.axis_names[edge.axis2])
+      right_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     left_axis_names.append(edge_name)
   else:
     left_axis_names = None
@@ -317,25 +340,19 @@ def split_node_qr(
   transp_tensor = node.tensor_from_edge_order(left_edges + right_edges)
 
   q, r = backend.qr(transp_tensor, len(left_edges))
-  left_node = Node(q,
-                   name=left_name,
-                   axis_names=left_axis_names,
-                   backend=backend)
+  left_node = Node(q, name=left_name, axis_names=left_axis_names, backend=backend)
 
   left_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
   ]
   for i, edge in enumerate(left_edges):
     left_node.add_edge(edge, i)
     edge.update_axis(left_axes_order[i], node, i, left_node)
 
-  right_node = Node(r,
-                    name=right_name,
-                    axis_names=right_axis_names,
-                    backend=backend)
+  right_node = Node(r, name=right_name, axis_names=right_axis_names, backend=backend)
 
   right_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
   ]
   for i, edge in enumerate(right_edges):
     # i + 1 to account for the new edge.
@@ -349,22 +366,22 @@ def split_node_qr(
 
 
 def split_node_rq(
-    node: AbstractNode,
-    left_edges: List[Edge],
-    right_edges: List[Edge],
-    left_name: Optional[Text] = None,
-    right_name: Optional[Text] = None,
-    edge_name: Optional[Text] = None,
+  node: AbstractNode,
+  left_edges: List[Edge],
+  right_edges: List[Edge],
+  left_name: Optional[Text] = None,
+  right_name: Optional[Text] = None,
+  edge_name: Optional[Text] = None,
 ) -> Tuple[AbstractNode, AbstractNode]:
   """Split a `node` using RQ (reversed QR) decomposition.
 
-  Let :math:`M` be the matrix created by 
-  flattening `left_edges` and `right_edges` into 2 axes. 
+  Let :math:`M` be the matrix created by
+  flattening `left_edges` and `right_edges` into 2 axes.
 
-  Let :math:`QR = M^*` be the QR Decomposition of :math:`M^*`. 
-  This will split the network into 2 nodes. 
+  Let :math:`QR = M^*` be the QR Decomposition of :math:`M^*`.
+  This will split the network into 2 nodes.
 
-  The left node's tensor will be :math:`R^*` (a lower triangular matrix) 
+  The left node's tensor will be :math:`R^*` (a lower triangular matrix)
   and the right node's tensor will be :math:`Q^*` (an orthonormal matrix)
 
   Args:
@@ -391,19 +408,24 @@ def split_node_rq(
     AttributeError: If `node` has no backend attribute
   """
 
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
 
   if node.axis_names and edge_name:
     left_axis_names = []
     right_axis_names = [edge_name]
     for edge in left_edges:
-      left_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                             else node.axis_names[edge.axis2])
+      left_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     for edge in right_edges:
-      right_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                              else node.axis_names[edge.axis2])
+      right_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     left_axis_names.append(edge_name)
   else:
     left_axis_names = None
@@ -412,25 +434,19 @@ def split_node_rq(
   transp_tensor = node.tensor_from_edge_order(left_edges + right_edges)
 
   r, q = backend.rq(transp_tensor, len(left_edges))
-  left_node = Node(r,
-                   name=left_name,
-                   axis_names=left_axis_names,
-                   backend=backend)
+  left_node = Node(r, name=left_name, axis_names=left_axis_names, backend=backend)
 
   left_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
   ]
   for i, edge in enumerate(left_edges):
     left_node.add_edge(edge, i)
     edge.update_axis(left_axes_order[i], node, i, left_node)
 
-  right_node = Node(q,
-                    name=right_name,
-                    axis_names=right_axis_names,
-                    backend=backend)
+  right_node = Node(q, name=right_name, axis_names=right_axis_names, backend=backend)
 
   right_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
   ]
 
   for i, edge in enumerate(right_edges):
@@ -444,22 +460,22 @@ def split_node_rq(
 
 
 def split_node_full_svd(
-    node: AbstractNode,
-    left_edges: List[Edge],
-    right_edges: List[Edge],
-    max_singular_values: Optional[int] = None,
-    max_truncation_err: Optional[float] = None,
-    relative: Optional[bool] = False,
-    left_name: Optional[Text] = None,
-    middle_name: Optional[Text] = None,
-    right_name: Optional[Text] = None,
-    left_edge_name: Optional[Text] = None,
-    right_edge_name: Optional[Text] = None,
+  node: AbstractNode,
+  left_edges: List[Edge],
+  right_edges: List[Edge],
+  max_singular_values: Optional[int] = None,
+  max_truncation_err: Optional[float] = None,
+  relative: Optional[bool] = False,
+  left_name: Optional[Text] = None,
+  middle_name: Optional[Text] = None,
+  right_name: Optional[Text] = None,
+  left_edge_name: Optional[Text] = None,
+  right_edge_name: Optional[Text] = None,
 ) -> Tuple[AbstractNode, AbstractNode, AbstractNode, Tensor]:
   """Split a node by doing a full singular value decomposition.
 
-  Let :math:`M` be the matrix created by 
-  flattening `left_edges` and `right_edges` into 2 axes. 
+  Let :math:`M` be the matrix created by
+  flattening `left_edges` and `right_edges` into 2 axes.
   Let :math:`U S V^* = M` be the Singular Value Decomposition of :math:`M`.
 
   The left most node will be :math:`U` tensor of the SVD, the middle node is
@@ -491,7 +507,7 @@ def split_node_full_svd(
     max_singular_values: The maximum number of singular values to keep.
     max_truncation_err: The maximum allowed truncation error.
     relative: Multiply `max_truncation_err` with the largest singular value.
-    left_name: The name of the new left node. If None, a name will be 
+    left_name: The name of the new left node. If None, a name will be
       generated automatically.
     middle_name: The name of the new center node. If `None`, a name will be
       generated automatically.
@@ -522,19 +538,24 @@ def split_node_full_svd(
     AttributeError: If `node` has no backend attribute
   """
 
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
 
   if node.axis_names and left_edge_name and right_edge_name:
     left_axis_names = []
     right_axis_names = [right_edge_name]
     for edge in left_edges:
-      left_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                             else node.axis_names[edge.axis2])
+      left_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     for edge in right_edges:
-      right_axis_names.append(node.axis_names[edge.axis1] if edge.node1 is node
-                              else node.axis_names[edge.axis2])
+      right_axis_names.append(
+        node.axis_names[edge.axis1]
+        if edge.node1 is node
+        else node.axis_names[edge.axis2]
+      )
     left_axis_names.append(left_edge_name)
     center_axis_names = [left_edge_name, right_edge_name]
   else:
@@ -545,45 +566,39 @@ def split_node_full_svd(
   backend = node.backend
   transp_tensor = node.tensor_from_edge_order(left_edges + right_edges)
 
-  u, s, vh, trun_vals = backend.svd(transp_tensor,
-                                    len(left_edges),
-                                    max_singular_values,
-                                    max_truncation_err,
-                                    relative=relative)
-  left_node = Node(u,
-                   name=left_name,
-                   axis_names=left_axis_names,
-                   backend=backend)
-  singular_values_node = Node(backend.diagflat(s),
-                              name=middle_name,
-                              axis_names=center_axis_names,
-                              backend=backend)
+  u, s, vh, trun_vals = backend.svd(
+    transp_tensor,
+    len(left_edges),
+    max_singular_values,
+    max_truncation_err,
+    relative=relative,
+  )
+  left_node = Node(u, name=left_name, axis_names=left_axis_names, backend=backend)
+  singular_values_node = Node(
+    backend.diagflat(s),
+    name=middle_name,
+    axis_names=center_axis_names,
+    backend=backend,
+  )
 
-  right_node = Node(vh,
-                    name=right_name,
-                    axis_names=right_axis_names,
-                    backend=backend)
+  right_node = Node(vh, name=right_name, axis_names=right_axis_names, backend=backend)
 
   left_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in left_edges
   ]
   for i, edge in enumerate(left_edges):
     left_node.add_edge(edge, i)
     edge.update_axis(left_axes_order[i], node, i, left_node)
 
   right_axes_order = [
-      edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
+    edge.axis1 if edge.node1 is node else edge.axis2 for edge in right_edges
   ]
   for i, edge in enumerate(right_edges):
     # i + 1 to account for the new edge.
     right_node.add_edge(edge, i + 1)
     edge.update_axis(right_axes_order[i], node, i + 1, right_node)
-  connect(left_node.edges[-1],
-          singular_values_node.edges[0],
-          name=left_edge_name)
-  connect(singular_values_node.edges[1],
-          right_node.edges[0],
-          name=right_edge_name)
+  connect(left_node.edges[-1], singular_values_node.edges[0], name=left_edge_name)
+  connect(singular_values_node.edges[1], right_node.edges[0], name=right_edge_name)
   node.fresh_edges(node.axis_names)
   return left_node, singular_values_node, right_node, trun_vals
 
@@ -606,7 +621,7 @@ def _reachable(nodes: Set[AbstractNode]) -> Set[AbstractNode]:
 
 
 def reachable(
-    inputs: Union[AbstractNode, Iterable[AbstractNode], Edge, Iterable[Edge]]
+  inputs: Union[AbstractNode, Iterable[AbstractNode], Edge, Iterable[Edge]],
 ) -> Set[AbstractNode]:
   """Computes all nodes reachable from `node` or `edge.node1` by connected
   edges.
@@ -633,13 +648,16 @@ def reachable(
     elif isinstance(inp, Edge):
       processed_inputs |= {inp.node1}
     else:
-      raise TypeError(f"input to `reachable` has to be an iterable of "
-                      f"Nodes or Edges, got {type(inp)} instead.")
+      raise TypeError(
+        f"input to `reachable` has to be an iterable of "
+        f"Nodes or Edges, got {type(inp)} instead."
+      )
   return _reachable(set(processed_inputs))
 
 
-def check_correct(nodes: Iterable[AbstractNode],
-                  check_connections: Optional[bool] = True) -> None:
+def check_correct(
+  nodes: Iterable[AbstractNode], check_connections: Optional[bool] = True
+) -> None:
   """Check if the network defined by `nodes` fulfills necessary consistency
   relations.
 
@@ -657,9 +675,11 @@ def check_correct(nodes: Iterable[AbstractNode],
   for node in nodes:
     for i, edge in enumerate(node.edges):
       if edge.node1 is not node and edge.node2 is not node:
-        raise ValueError("Edge '{}' does not connect to node '{}'."
-                         "Edge's nodes: '{}', '{}'.".format(
-                             edge, node, edge.node1, edge.node2))
+        raise ValueError(
+          "Edge '{}' does not connect to node '{}'.Edge's nodes: '{}', '{}'.".format(
+            edge, node, edge.node1, edge.node2
+          )
+        )
 
       is_edge_node_consistent = False
       if edge.node1 is node:
@@ -670,9 +690,11 @@ def check_correct(nodes: Iterable[AbstractNode],
           is_edge_node_consistent = True
       if not is_edge_node_consistent:
         raise ValueError(
-            "Edge '{}' does not point to '{}' on the correct axis. "
-            "Edge axes: {}, {}. Node axis: {}.".format(edge, node, edge.axis1,
-                                                       edge.axis2, i))
+          "Edge '{}' does not point to '{}' on the correct axis. "
+          "Edge axes: {}, {}. Node axis: {}.".format(
+            edge, node, edge.axis1, edge.axis2, i
+          )
+        )
   if check_connections:
     check_connected(nodes)
 
@@ -682,7 +704,7 @@ def check_connected(nodes: Iterable[AbstractNode]) -> None:
 
   Args:
     nodes: A list of `nodes`.
-    
+
   Returns:
     `None`
 
@@ -751,6 +773,7 @@ def contract_trace_edges(node: AbstractNode) -> AbstractNode:
       break
   return res
 
+
 def reduced_density(traced_out_edges: Iterable[Edge]) -> Tuple[dict, dict]:
   """Constructs the tensor network for a reduced density matrix, if it is pure.
 
@@ -805,17 +828,19 @@ def switch_backend(nodes: Iterable[AbstractNode], new_backend: Text) -> None:
   Returns:
     None
   """
-  if new_backend == 'symmetric':
-    if np.all([n.backend.name == 'symmetric' for n in nodes]):
+  if new_backend == "symmetric":
+    if np.all([n.backend.name == "symmetric" for n in nodes]):
       return
     raise ValueError("switching to `symmetric` backend not possible")
 
   backend = backend_factory.get_backend(new_backend)
   for node in nodes:
     if node.backend.name != "numpy":
-      raise NotImplementedError("Can only switch backends when the current "
-                                "backend is 'numpy'. Current backend "
-                                "is '{}'".format(node.backend))
+      raise NotImplementedError(
+        "Can only switch backends when the current "
+        "backend is 'numpy'. Current backend "
+        "is '{}'".format(node.backend)
+      )
     node.tensor = backend.convert_to_tensor(node.tensor)
     node.backend = backend
 
@@ -847,28 +872,27 @@ def get_neighbors(node: AbstractNode) -> List[AbstractNode]:
 
 
 def _build_serial_binding(
-    edge_binding: Dict[str, Union[Edge, Iterable[Edge]]],
-    edge_id_dict: Dict[Edge, int]) -> Dict[str, Iterable[int]]:
+  edge_binding: Dict[str, Union[Edge, Iterable[Edge]]], edge_id_dict: Dict[Edge, int]
+) -> Dict[str, Iterable[int]]:
   if not edge_binding or not edge_id_dict:
     return {}
   serial_edge_binding = {}
   for k, v in edge_binding.items():
     if not isinstance(k, str):
-      raise TypeError(f'Binding keys must be of type string, not {type(k)}')
+      raise TypeError(f"Binding keys must be of type string, not {type(k)}")
 
     binding_list = []
     # pylint: disable=isinstance-second-argument-not-valid-type
     if isinstance(v, Iterable):
       for e in v:
         if not isinstance(e, Edge):
-          raise TypeError(
-              'Binding elements must be Edges or iterables of Edges')
+          raise TypeError("Binding elements must be Edges or iterables of Edges")
         e_id = edge_id_dict.get(e)
         if e_id is not None:
           binding_list.append(e_id)
     else:
       if not isinstance(v, Edge):
-        raise TypeError('Binding elements must be Edges or iterables of Edges')
+        raise TypeError("Binding elements must be Edges or iterables of Edges")
       e_id = edge_id_dict.get(v)
       if e_id is not None:
         binding_list.append(e_id)
@@ -877,35 +901,36 @@ def _build_serial_binding(
   return serial_edge_binding
 
 
-def nodes_to_json(nodes: List[AbstractNode],
-                  edge_binding: Optional[Dict[str, Union[Edge, Iterable[Edge]]]]
-                  = None) -> str:
+def nodes_to_json(
+  nodes: List[AbstractNode],
+  edge_binding: Optional[Dict[str, Union[Edge, Iterable[Edge]]]] = None,
+) -> str:
   """
-  Create a JSON string representing the Tensor Network made up of the given 
+  Create a JSON string representing the Tensor Network made up of the given
   nodes. Nodes and their attributes, edges and their attributes and tensor
   values are included.
-  
+
   Tensors are serialized according the the format used by each tensors backend.
-  
-  For edges spanning included nodes and excluded nodes the edge attributes are 
-  preserved in the serialization but the connection to the excluded node is 
+
+  For edges spanning included nodes and excluded nodes the edge attributes are
+  preserved in the serialization but the connection to the excluded node is
   dropped. The original edge is not modified.
-  
+
   Args:
     nodes: A list of nodes making up a tensor network.
-    edge_binding: A dictionary containing {str->edge} bindings. Edges that are 
+    edge_binding: A dictionary containing {str->edge} bindings. Edges that are
       not included in the serialized network are ommited from the dictionary.
-    
+
   Returns:
     A string representing the JSON serialized tensor network.
-    
+
   Raises:
-    TypeError: If an edge_binding dict is passed with non string keys, or non 
+    TypeError: If an edge_binding dict is passed with non string keys, or non
       Edge values.
   """
   network_dict = {
-      'nodes': [],
-      'edges': [],
+    "nodes": [],
+    "edges": [],
   }
   node_id_dict = {}
   edge_id_dict = {}
@@ -913,10 +938,12 @@ def nodes_to_json(nodes: List[AbstractNode],
   # Build serialized Nodes
   for i, node in enumerate(nodes):
     node_id_dict[node] = i
-    network_dict['nodes'].append({
-        'id': i,
-        'attributes': node.to_serial_dict(),
-    })
+    network_dict["nodes"].append(
+      {
+        "id": i,
+        "attributes": node.to_serial_dict(),
+      }
+    )
   edges = get_all_edges(nodes)
 
   # Build serialized edges
@@ -924,67 +951,66 @@ def nodes_to_json(nodes: List[AbstractNode],
     edge_id_dict[edge] = i
     node_ids = [node_id_dict.get(n) for n in edge.get_nodes()]
     attributes = edge.to_serial_dict()
-    attributes['axes'] = [
-        a if node_ids[j] is not None else None
-        for j, a in enumerate(attributes['axes'])
+    attributes["axes"] = [
+      a if node_ids[j] is not None else None for j, a in enumerate(attributes["axes"])
     ]
     edge_dict = {
-        'id': i,
-        'node_ids': node_ids,
-        'attributes': attributes,
+      "id": i,
+      "node_ids": node_ids,
+      "attributes": attributes,
     }
-    network_dict['edges'].append(edge_dict)
+    network_dict["edges"].append(edge_dict)
 
   serial_edge_binding = _build_serial_binding(edge_binding, edge_id_dict)
   if serial_edge_binding:
-    network_dict['edge_binding'] = serial_edge_binding
+    network_dict["edge_binding"] = serial_edge_binding
   return json.dumps(network_dict)
 
 
-def nodes_from_json(json_str: str) -> Tuple[List[AbstractNode],
-                                            Dict[str, Tuple[Edge]]]:
+def nodes_from_json(json_str: str) -> Tuple[List[AbstractNode], Dict[str, Tuple[Edge]]]:
   """
   Create a tensor network from a JSON string representation of a tensor network.
-  
+
   Args:
     json_str: A string representing a JSON serialized tensor network.
-    
+
   Returns:
     A list of nodes making up the tensor network.
     A dictionary of {str -> (edge,)} bindings. All dictionary values are tuples
       of Edges.
-    
+
   """
   network_dict = json.loads(json_str)
   nodes = []
   node_ids = {}
   edge_lookup = {}
   edge_binding = {}
-  for n in network_dict['nodes']:
-    node = Node.from_serial_dict(n['attributes'])
+  for n in network_dict["nodes"]:
+    node = Node.from_serial_dict(n["attributes"])
     nodes.append(node)
-    node_ids[n['id']] = node
-  for e in network_dict['edges']:
-    e_nodes = [node_ids.get(n_id) for n_id in e['node_ids']]
-    axes = e['attributes']['axes']
-    edge = Edge(node1=e_nodes[0],
-                axis1=axes[0],
-                node2=e_nodes[1],
-                axis2=axes[1],
-                name=e['attributes']['name'])
-    edge_lookup[e['id']] = edge
+    node_ids[n["id"]] = node
+  for e in network_dict["edges"]:
+    e_nodes = [node_ids.get(n_id) for n_id in e["node_ids"]]
+    axes = e["attributes"]["axes"]
+    edge = Edge(
+      node1=e_nodes[0],
+      axis1=axes[0],
+      node2=e_nodes[1],
+      axis2=axes[1],
+      name=e["attributes"]["name"],
+    )
+    edge_lookup[e["id"]] = edge
     for node, axis in zip(e_nodes, axes):
       if node is not None:
         node.add_edge(edge, axis, override=True)
-  for k, v in network_dict.get('edge_binding', {}).items():
+  for k, v in network_dict.get("edge_binding", {}).items():
     for e_id in v:
       edge_binding[k] = edge_binding.get(k, ()) + (edge_lookup[e_id],)
 
   return nodes, edge_binding
 
 
-def redirect_edge(edge: Edge, new_node: AbstractNode,
-                  old_node: AbstractNode) -> None:
+def redirect_edge(edge: Edge, new_node: AbstractNode, old_node: AbstractNode) -> None:
   """
   Redirect `edge` from `old_node` to `new_node`.
   Routine updates `new_node` and `old_node`.
@@ -1005,8 +1031,7 @@ def redirect_edge(edge: Edge, new_node: AbstractNode,
   if not edge.is_trace():
     if edge.is_dangling():
       if edge.node1 is not old_node:
-        raise ValueError(f"edge {edge} is not pointing "
-                         f"to old_node {old_node}")
+        raise ValueError(f"edge {edge} is not pointing to old_node {old_node}")
       edge.node1 = new_node
       axis = edge.axis1
     else:
@@ -1017,15 +1042,13 @@ def redirect_edge(edge: Edge, new_node: AbstractNode,
         edge.node2 = new_node
         axis = edge.axis2
       else:
-        raise ValueError(f"edge {edge} is not pointing "
-                         f"to old_node {old_node}")
+        raise ValueError(f"edge {edge} is not pointing to old_node {old_node}")
     new_node.add_edge(edge, axis, True)
     new_edge = Edge(old_node, axis)
     old_node.add_edge(new_edge, axis, True)
   else:
     if edge.node1 is not old_node:
-      raise ValueError(f"edge {edge} is not pointing "
-                       f"to old_node {old_node}")
+      raise ValueError(f"edge {edge} is not pointing to old_node {old_node}")
     edge.node1 = new_node
     edge.node2 = new_node
     axis1 = edge.axis1

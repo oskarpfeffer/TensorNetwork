@@ -37,7 +37,8 @@ def test_reshape():
 def test_transpose():
   backend = pytorch_backend.PyTorchBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
   actual = backend.transpose(a, [2, 0, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
   np.testing.assert_allclose(expected, actual)
@@ -46,8 +47,9 @@ def test_transpose():
 def test_transpose_noperm():
   backend = pytorch_backend.PyTorchBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
-  actual = backend.transpose(a) # [2, 1, 0]
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
+  actual = backend.transpose(a)  # [2, 1, 0]
   actual = backend.transpose(actual, perm=[0, 2, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
   np.testing.assert_allclose(expected, actual)
@@ -65,16 +67,18 @@ def test_shape_concat():
 def test_slice():
   backend = pytorch_backend.PyTorchBackend()
   a = backend.convert_to_tensor(
-      np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
+    np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+  )
   actual = backend.slice(a, (1, 1), (2, 2))
-  expected = np.array([[5., 6.], [8., 9.]])
+  expected = np.array([[5.0, 6.0], [8.0, 9.0]])
   np.testing.assert_allclose(expected, actual)
 
 
 def test_slice_raises_error():
   backend = pytorch_backend.PyTorchBackend()
   a = backend.convert_to_tensor(
-      np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
+    np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+  )
   with pytest.raises(ValueError):
     backend.slice(a, (1, 1), (2, 2, 2))
 
@@ -228,8 +232,12 @@ def test_random_uniform_boundaries(dtype):
   backend = pytorch_backend.PyTorchBackend()
   a = backend.random_uniform((4, 4), seed=10, dtype=dtype)
   b = backend.random_uniform((4, 4), (lb, ub), seed=10, dtype=dtype)
-  assert (torch.ge(a, 0).byte().all() and torch.le(a, 1).byte().all() and
-          torch.ge(b, lb).byte().all() and torch.le(b, ub).byte().all())
+  assert (
+    torch.ge(a, 0).byte().all()
+    and torch.le(a, 1).byte().all()
+    and torch.ge(b, lb).byte().all()
+    and torch.le(b, ub).byte().all()
+  )
 
 
 def test_random_uniform_behavior():
@@ -250,7 +258,7 @@ def test_conj():
 
 
 def test_eigsh_lanczos_0():
-  #this test should just not crash
+  # this test should just not crash
   dtype = torch.float64
   backend = pytorch_backend.PyTorchBackend()
   D = 4
@@ -311,25 +319,27 @@ def test_eigsh_lanczos_reorthogonalize(numeig):
     return mat.mv(x)
 
   eta1, U1 = backend.eigsh_lanczos(
-      mv, [H],
-      shape=(D,),
-      dtype=dtype,
-      numeig=numeig,
-      num_krylov_vecs=D,
-      reorthogonalize=True,
-      ndiag=1,
-      tol=10**(-12),
-      delta=10**(-12))
+    mv,
+    [H],
+    shape=(D,),
+    dtype=dtype,
+    numeig=numeig,
+    num_krylov_vecs=D,
+    reorthogonalize=True,
+    ndiag=1,
+    tol=10 ** (-12),
+    delta=10 ** (-12),
+  )
   eta2, U2 = np.linalg.eigh(H)
 
   np.testing.assert_allclose(eta1[0:numeig], eta2[0:numeig])
   for n in range(numeig):
     v2 = U2[:, n]
-    v2 /= np.sum(v2)  #fix phases
+    v2 /= np.sum(v2)  # fix phases
     v1 = np.reshape(U1[n], (D))
     v1 /= torch.sum(v1)
 
-    np.testing.assert_allclose(v1, v2, rtol=10**(-5), atol=10**(-5))
+    np.testing.assert_allclose(v1, v2, rtol=10 ** (-5), atol=10 ** (-5))
 
 
 def test_eigsh_lanczos_2():
@@ -343,57 +353,63 @@ def test_eigsh_lanczos_2():
     return mat.mv(x)
 
   eta1, U1 = backend.eigsh_lanczos(
-      mv, [H],
-      shape=(D,),
-      dtype=dtype,
-      reorthogonalize=True,
-      ndiag=1,
-      tol=10**(-12),
-      delta=10**(-12))
+    mv,
+    [H],
+    shape=(D,),
+    dtype=dtype,
+    reorthogonalize=True,
+    ndiag=1,
+    tol=10 ** (-12),
+    delta=10 ** (-12),
+  )
   eta2, U2 = H.symeig(eigenvectors=True)
   v2 = U2[:, 0]
   v2 = v2 / sum(v2)
   v1 = np.reshape(U1[0], (D))
   v1 = v1 / sum(v1)
   np.testing.assert_allclose(eta1[0], min(eta2))
-  np.testing.assert_allclose(v1, v2, rtol=10**(-5), atol=10**(-5))
+  np.testing.assert_allclose(v1, v2, rtol=10 ** (-5), atol=10 ** (-5))
 
 
 def test_eigsh_lanczos_raises():
   backend = pytorch_backend.PyTorchBackend()
-  with pytest.raises(
-      ValueError, match='`num_krylov_vecs` >= `numeig` required!'):
+  with pytest.raises(ValueError, match="`num_krylov_vecs` >= `numeig` required!"):
     backend.eigsh_lanczos(lambda x: x, numeig=10, num_krylov_vecs=9)
   with pytest.raises(
-      ValueError,
-      match="Got numeig = 2 > 1 and `reorthogonalize = False`. "
-      "Use `reorthogonalize=True` for `numeig > 1`"):
+    ValueError,
+    match="Got numeig = 2 > 1 and `reorthogonalize = False`. "
+    "Use `reorthogonalize=True` for `numeig > 1`",
+  ):
     backend.eigsh_lanczos(lambda x: x, numeig=2, reorthogonalize=False)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x, shape=(10,), dtype=None)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x, shape=None, dtype=torch.float64)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x)
-  with pytest.raises(
-      TypeError, match="Expected a `torch.Tensor`. Got <class 'list'>"):
+  with pytest.raises(TypeError, match="Expected a `torch.Tensor`. Got <class 'list'>"):
     backend.eigsh_lanczos(lambda x: x, initial_state=[1, 2, 3])
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 2),
-    pytest.param(
-        np.ones((1, 2, 3)), np.ones((1, 2, 3)), 2. * np.ones((1, 2, 3))),
-])
+    pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), 2.0 * np.ones((1, 2, 3))),
+  ],
+)
 def test_addition(a, b, expected):
   backend = pytorch_backend.PyTorchBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -404,10 +420,13 @@ def test_addition(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 0),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.zeros((1, 2, 3))),
-])
+  ],
+)
 def test_subtraction(a, b, expected):
   backend = pytorch_backend.PyTorchBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -418,10 +437,13 @@ def test_subtraction(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 1),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.ones((1, 2, 3))),
-])
+  ],
+)
 def test_multiply(a, b, expected):
   backend = pytorch_backend.PyTorchBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -432,11 +454,13 @@ def test_multiply(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
-    pytest.param(2., 2., 1.),
-    pytest.param(
-        np.ones(()), 2. * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
-])
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
+    pytest.param(2.0, 2.0, 1.0),
+    pytest.param(np.ones(()), 2.0 * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
+  ],
+)
 def test_divide(a, b, expected):
   backend = pytorch_backend.PyTorchBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -665,11 +689,13 @@ def test_matmul_rank2():
   expected = np.matmul(t1, t2)
   np.testing.assert_allclose(expected, actual)
 
+
 @pytest.mark.parametrize("dtype", torch_randn_dtypes)
 def test_item(dtype):
   backend = pytorch_backend.PyTorchBackend()
   tensor = backend.randn((1,), dtype=dtype, seed=10)
   assert backend.item(tensor) == tensor.item()
+
 
 @pytest.mark.parametrize("dtype", torch_randn_dtypes)
 def test_eps(dtype):

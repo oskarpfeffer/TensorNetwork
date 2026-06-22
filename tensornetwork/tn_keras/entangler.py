@@ -11,7 +11,7 @@ import math
 
 
 # pytype: disable=module-attr
-@tf.keras.utils.register_keras_serializable(package='tensornetwork')# pylint: disable=no-member
+@tf.keras.utils.register_keras_serializable(package="tensornetwork")  # pylint: disable=no-member
 # pytype: enable=module-attr
 class DenseEntangler(Layer):
   """Entangler TN layer. Allows for very large hidden layers.
@@ -21,7 +21,7 @@ class DenseEntangler(Layer):
   constructed from and applied to the last input dimension.
 
   Example:
-    ::  
+    ::
 
       # as first layer in a sequential model:
       model = Sequential()
@@ -62,25 +62,27 @@ class DenseEntangler(Layer):
     N-D tensor with shape: `(batch_size, ..., output_dim)`.
   """
 
-  def __init__(self,
-               output_dim: int,
-               num_legs: int,
-               num_levels: int,
-               use_bias: Optional[bool] = True,
-               activation: Optional[Text] = None,
-               kernel_initializer: Optional[Text] = 'glorot_uniform',
-               bias_initializer: Optional[Text] = 'zeros',
-               **kwargs) -> None:
+  def __init__(
+    self,
+    output_dim: int,
+    num_legs: int,
+    num_levels: int,
+    use_bias: Optional[bool] = True,
+    activation: Optional[Text] = None,
+    kernel_initializer: Optional[Text] = "glorot_uniform",
+    bias_initializer: Optional[Text] = "zeros",
+    **kwargs,
+  ) -> None:
 
-    if 'input_shape' not in kwargs and 'input_dim' in kwargs:
-      kwargs['input_shape'] = (kwargs.pop('input_dim'),)
+    if "input_shape" not in kwargs and "input_dim" in kwargs:
+      kwargs["input_shape"] = (kwargs.pop("input_dim"),)
 
-    assert (
-        num_legs >=
-        2), f'Need at least 2 legs to create Entangler but got {num_legs} legs'
-    assert (
-        num_levels >= 1
-    ), f'Need at least 1 level to create Entangler but got {num_levels} levels'
+    assert num_legs >= 2, (
+      f"Need at least 2 legs to create Entangler but got {num_legs} legs"
+    )
+    assert num_levels >= 1, (
+      f"Need at least 1 level to create Entangler but got {num_levels} levels"
+    )
 
     super().__init__(**kwargs)
 
@@ -97,26 +99,27 @@ class DenseEntangler(Layer):
     # Disable the attribute-defined-outside-init violations in this function
     # pylint: disable=attribute-defined-outside-init
     if input_shape[-1] is None:
-      raise ValueError('The last dimension of the inputs to `Dense` '
-                       'should be defined. Found `None`.')
+      raise ValueError(
+        "The last dimension of the inputs to `Dense` should be defined. Found `None`."
+      )
 
     def is_perfect_root(n, n_nodes):
-      root = n**(1. / n_nodes)
-      return round(root)**n_nodes == n
+      root = n ** (1.0 / n_nodes)
+      return round(root) ** n_nodes == n
 
     super().build(input_shape)
 
     # Ensure the Entangler dimensions will work
-    assert (
-        is_perfect_root(input_shape[-1], self.num_legs)
-    ), f'Input dim {input_shape[-1]}**(1. / {self.num_legs}) must be round.'
+    assert is_perfect_root(input_shape[-1], self.num_legs), (
+      f"Input dim {input_shape[-1]}**(1. / {self.num_legs}) must be round."
+    )
 
-    assert (
-        is_perfect_root(self.output_dim, self.num_legs)
-    ), f'Output dim {self.output_dim}**(1. / {self.num_legs}) must be round.'
+    assert is_perfect_root(self.output_dim, self.num_legs), (
+      f"Output dim {self.output_dim}**(1. / {self.num_legs}) must be round."
+    )
 
-    self.leg_dim = round(input_shape[-1]**(1. / self.num_legs))
-    self.out_leg_dim = round(self.output_dim**(1. / self.num_legs))
+    self.leg_dim = round(input_shape[-1] ** (1.0 / self.num_legs))
+    self.out_leg_dim = round(self.output_dim ** (1.0 / self.num_legs))
     self.num_nodes = self.num_levels * (self.num_legs - 1)
 
     for i in range(self.num_nodes):
@@ -131,29 +134,44 @@ class DenseEntangler(Layer):
       if current_level == self.num_levels - 1:
         c = self.out_leg_dim
       self.nodes.append(
-          self.add_weight(name=f'node_{i}',
-                          shape=(a, b, c, d),
-                          trainable=True,
-                          initializer=self.kernel_initializer))
+        self.add_weight(
+          name=f"node_{i}",
+          shape=(a, b, c, d),
+          trainable=True,
+          initializer=self.kernel_initializer,
+        )
+      )
 
-    self.bias_var = self.add_weight(
-        name='bias',
+    self.bias_var = (
+      self.add_weight(
+        name="bias",
         shape=(self.output_dim,),
         trainable=True,
-        initializer=self.bias_initializer) if self.use_bias else None
+        initializer=self.bias_initializer,
+      )
+      if self.use_bias
+      else None
+    )
 
   def call(self, inputs: tf.Tensor, **kwargs) -> tf.Tensor:  # pylint: disable=unused-argument, arguments-differ
 
-    def f(x: tf.Tensor, nodes: List[Node], num_nodes: int, num_legs: int,
-          leg_dim: int, use_bias: bool, bias_var: tf.Tensor) -> tf.Tensor:
+    def f(
+      x: tf.Tensor,
+      nodes: List[Node],
+      num_nodes: int,
+      num_legs: int,
+      leg_dim: int,
+      use_bias: bool,
+      bias_var: tf.Tensor,
+    ) -> tf.Tensor:
 
       l = [leg_dim] * num_legs
       input_reshaped = tf.reshape(x, tuple(l))
 
-      x_node = tn.Node(input_reshaped, name='xnode', backend="tensorflow")
+      x_node = tn.Node(input_reshaped, name="xnode", backend="tensorflow")
       edges = x_node.edges[:]  # force a copy
       for i in range(num_nodes):
-        node = tn.Node(nodes[i], name=f'node_{i}', backend="tensorflow")
+        node = tn.Node(nodes[i], name=f"node_{i}", backend="tensorflow")
         tn.connect(edges[i % num_legs], node[0])
         tn.connect(edges[(i + 1) % num_legs], node[1])
         edges[i % num_legs] = node[2]
@@ -179,11 +197,27 @@ class DenseEntangler(Layer):
     input_shape = list(inputs.shape)
     inputs = tf.reshape(inputs, (-1, input_shape[-1]))
     result = tf.vectorized_map(
-        lambda vec: f(vec, self.nodes, self.num_nodes, self.num_legs, self.
-                      leg_dim, self.use_bias, self.bias_var), inputs)
+      lambda vec: f(
+        vec,
+        self.nodes,
+        self.num_nodes,
+        self.num_legs,
+        self.leg_dim,
+        self.use_bias,
+        self.bias_var,
+      ),
+      inputs,
+    )
     if self.activation is not None:
       result = self.activation(result)
-    result = tf.reshape(result, [-1] + input_shape[1:-1] + [self.output_dim,])
+    result = tf.reshape(
+      result,
+      [-1]
+      + input_shape[1:-1]
+      + [
+        self.output_dim,
+      ],
+    )
     return result
 
   def compute_output_shape(self, input_shape: List[int]) -> Tuple[int, int]:
@@ -201,18 +235,17 @@ class DenseEntangler(Layer):
     config = {}
 
     # Include the Entangler-specific arguments
-    args = ['output_dim', 'num_legs', 'num_levels', 'use_bias']
+    args = ["output_dim", "num_legs", "num_levels", "use_bias"]
     for arg in args:
       config[arg] = getattr(self, arg)
 
     # Serialize the activation
-    config['activation'] = activations.serialize(getattr(self, 'activation'))
+    config["activation"] = activations.serialize(getattr(self, "activation"))
 
     # Serialize the initializers
-    layer_initializers = ['kernel_initializer', 'bias_initializer']
+    layer_initializers = ["kernel_initializer", "bias_initializer"]
     for initializer_arg in layer_initializers:
-      config[initializer_arg] = initializers.serialize(
-          getattr(self, initializer_arg))
+      config[initializer_arg] = initializers.serialize(getattr(self, initializer_arg))
 
     # Get base config
     base_config = super().get_config()

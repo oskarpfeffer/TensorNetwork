@@ -23,6 +23,7 @@ from tensornetwork.backend_contextmanager import get_default_backend
 from tensornetwork.backends.abstract_backend import AbstractBackend
 from typing import Any, List, Optional, Text, Type, Union, Dict, Sequence
 import tensornetwork.ncon_interface as ncon
+
 Tensor = Any
 
 
@@ -53,11 +54,13 @@ class BaseMPS:
   `center_position`.
   """
 
-  def __init__(self,
-               tensors: List[Tensor],
-               center_position: Optional[int] = None,
-               connector_matrix: Optional[Tensor] = None,
-               backend: Optional[Union[Text, AbstractBackend]] = None) -> None:
+  def __init__(
+    self,
+    tensors: List[Tensor],
+    center_position: Optional[int] = None,
+    connector_matrix: Optional[Tensor] = None,
+    backend: Optional[Union[Text, AbstractBackend]] = None,
+  ) -> None:
     """Initialize a BaseMPS.
 
     Args:
@@ -70,11 +73,13 @@ class BaseMPS:
         contractions. Available backends are currently 'numpy', 'tensorflow',
         'pytorch', 'jax'
     """
-    if (center_position is not None) and (center_position < 0 or
-                                          center_position >= len(tensors)):
-      raise ValueError("`center_position = {}` is different from `None` and "
-                       "not between 0 <= center_position < {}".format(
-                           center_position, len(tensors)))
+    if (center_position is not None) and (
+      center_position < 0 or center_position >= len(tensors)
+    ):
+      raise ValueError(
+        "`center_position = {}` is different from `None` and "
+        "not between 0 <= center_position < {}".format(center_position, len(tensors))
+      )
     if backend is None:
       backend = get_default_backend()
     if isinstance(backend, AbstractBackend):
@@ -82,11 +87,10 @@ class BaseMPS:
     else:
       self.backend = backend_factory.get_backend(backend)
 
-
     # the dtype is deduced from the tensor object.
     self.tensors = [self.backend.convert_to_tensor(t) for t in tensors]
     if not all(t.dtype == self.tensors[0].dtype for t in self.tensors):
-      raise TypeError('not all dtypes in BaseMPS.tensors are the same')
+      raise TypeError("not all dtypes in BaseMPS.tensors are the same")
 
     self.connector_matrix = connector_matrix
     self.center_position = center_position
@@ -95,16 +99,14 @@ class BaseMPS:
     ##########       define functions for jitted operations       ##########
     ########################################################################
     @partial(jit, backend=self.backend, static_argnums=(1, 2, 3))
-    def svd(tensor,
-            pivot_axis=2,
-            max_singular_values=None,
-            max_truncation_error=None):
+    def svd(tensor, pivot_axis=2, max_singular_values=None, max_truncation_error=None):
       return self.backend.svd(
-          tensor=tensor,
-          pivot_axis=pivot_axis,
-          max_singular_values=max_singular_values,
-          max_truncation_error=max_truncation_error,
-          relative=True)
+        tensor=tensor,
+        pivot_axis=pivot_axis,
+        max_singular_values=max_singular_values,
+        max_truncation_error=max_truncation_error,
+        relative=True,
+      )
 
     self.svd = svd
 
@@ -126,19 +128,25 @@ class BaseMPS:
     ########################################################################
 
   def left_transfer_operator(self, A, l, Abar):
-    return ncon.ncon([A, l, Abar], [[1, 2, -1], [1, 3], [3, 2, -2]],
-                     backend=self.backend.name)
+    return ncon.ncon(
+      [A, l, Abar], [[1, 2, -1], [1, 3], [3, 2, -2]], backend=self.backend.name
+    )
 
   def right_transfer_operator(self, B, r, Bbar):
-    return ncon.ncon([B, r, Bbar], [[-1, 2, 1], [1, 3], [-2, 2, 3]],
-                     backend=self.backend.name)
+    return ncon.ncon(
+      [B, r, Bbar], [[-1, 2, 1], [1, 3], [-2, 2, 3]], backend=self.backend.name
+    )
 
   def __len__(self) -> int:
     return len(self.tensors)
 
-  def position(self, site: int, normalize: Optional[bool] = True,
-               D: Optional[int] = None,
-               max_truncation_err: Optional[float] = None) -> np.number:
+  def position(
+    self,
+    site: int,
+    normalize: Optional[bool] = True,
+    D: Optional[int] = None,
+    max_truncation_err: Optional[float] = None,
+  ) -> np.number:
     """Shift `center_position` to `site`.
 
     Args:
@@ -154,42 +162,46 @@ class BaseMPS:
     """
     if self.center_position is None:
       raise ValueError(
-          "BaseMPS.center_position is `None`, cannot shift `center_position`."
-          "Reset `center_position` manually or use `canonicalize`")
+        "BaseMPS.center_position is `None`, cannot shift `center_position`."
+        "Reset `center_position` manually or use `canonicalize`"
+      )
     if max_truncation_err is not None and max_truncation_err >= 1.0:
-      raise ValueError("max_truncation_err should be 0 <= max_truncation_er"
-                       f" < 1, found max_truncation_err = {max_truncation_err}")
-    #`site` has to be between 0 and len(mps) - 1
+      raise ValueError(
+        "max_truncation_err should be 0 <= max_truncation_er"
+        f" < 1, found max_truncation_err = {max_truncation_err}"
+      )
+    # `site` has to be between 0 and len(mps) - 1
     if site >= len(self.tensors) or site < 0:
-      raise ValueError('site = {} not between values'
-                       ' 0 < site < N = {}'.format(site, len(self)))
+      raise ValueError(
+        "site = {} not between values 0 < site < N = {}".format(site, len(self))
+      )
 
-
-    #nothing to do
+    # nothing to do
     if site == self.center_position:
       Z = self.norm(self.tensors[self.center_position])
       if normalize:
         self.tensors[self.center_position] /= Z
       return Z
 
-    #shift center_position to the right using QR or SV decomposition
+    # shift center_position to the right using QR or SV decomposition
     if site > self.center_position:
       n = self.center_position
       for n in range(self.center_position, site):
-        use_svd = (D is not None and D < self.bond_dimension(n + 1)
-                  ) or max_truncation_err is not None
+        use_svd = (
+          D is not None and D < self.bond_dimension(n + 1)
+        ) or max_truncation_err is not None
         if not use_svd:
           isometry, rest = self.qr(self.tensors[n])
         else:
-          isometry, S, V, _ = self.svd(self.tensors[n], 2, D,
-                                       max_truncation_err)
-          rest = ncon.ncon([self.backend.diagflat(S), V], [[-1, 1], [1, -2]],
-                           backend=self.backend)
+          isometry, S, V, _ = self.svd(self.tensors[n], 2, D, max_truncation_err)
+          rest = ncon.ncon(
+            [self.backend.diagflat(S), V], [[-1, 1], [1, -2]], backend=self.backend
+          )
 
         self.tensors[n] = isometry
-        self.tensors[n + 1] = ncon.ncon([rest, self.tensors[n + 1]],
-                                        [[-1, 1], [1, -2, -3]],
-                                        backend=self.backend.name)
+        self.tensors[n + 1] = ncon.ncon(
+          [rest, self.tensors[n + 1]], [[-1, 1], [1, -2, -3]], backend=self.backend.name
+        )
         Z = self.norm(self.tensors[n + 1])
         # for an mps with > O(10) sites one needs to normalize to avoid
         # over or underflow errors; this takes care of the normalization
@@ -198,23 +210,24 @@ class BaseMPS:
 
       self.center_position = site
 
-    #shift center_position to the left using RQ or SV decomposition
+    # shift center_position to the left using RQ or SV decomposition
     else:
       for n in reversed(range(site + 1, self.center_position + 1)):
-        use_svd = (D is not None and D < self.bond_dimension(n)
-                  ) or max_truncation_err is not None
+        use_svd = (
+          D is not None and D < self.bond_dimension(n)
+        ) or max_truncation_err is not None
         if not use_svd:
           rest, isometry = self.rq(self.tensors[n])
         else:
-          U, S, isometry, _ = self.svd(self.tensors[n], 1, D,
-                                       max_truncation_err)
-          rest = ncon.ncon([U, self.backend.diagflat(S)], [[-1, 1], [1, -2]],
-                           backend=self.backend)
+          U, S, isometry, _ = self.svd(self.tensors[n], 1, D, max_truncation_err)
+          rest = ncon.ncon(
+            [U, self.backend.diagflat(S)], [[-1, 1], [1, -2]], backend=self.backend
+          )
 
-        self.tensors[n] = isometry  #a right-isometric tensor of rank 3
-        self.tensors[n - 1] = ncon.ncon([self.tensors[n - 1], rest],
-                                        [[-1, -2, 1], [1, -3]],
-                                        backend=self.backend.name)
+        self.tensors[n] = isometry  # a right-isometric tensor of rank 3
+        self.tensors[n - 1] = ncon.ncon(
+          [self.tensors[n - 1], rest], [[-1, -2, 1], [1, -3]], backend=self.backend.name
+        )
         Z = self.norm(self.tensors[n - 1])
         # for an mps with > O(10) sites one needs to normalize to avoid
         # over or underflow errors; this takes care of the normalization
@@ -222,13 +235,13 @@ class BaseMPS:
           self.tensors[n - 1] /= Z
 
       self.center_position = site
-    #return the norm of the last R tensor (useful for checks)
+    # return the norm of the last R tensor (useful for checks)
     return Z
 
   @property
   def dtype(self) -> Type[np.number]:
     if not all(t.dtype == self.tensors[0].dtype for t in self.tensors):
-      raise TypeError('not all dtype in BaseMPS.tensors are the same')
+      raise TypeError("not all dtype in BaseMPS.tensors are the same")
 
     return self.tensors[0].dtype
 
@@ -238,8 +251,7 @@ class BaseMPS:
   def bond_dimension(self, bond) -> List:
     """The bond dimension of `bond`"""
     if bond > len(self):
-      raise IndexError(f"bond {bond} out of bounds for"
-                       f" an MPS of length {len(self)}")
+      raise IndexError(f"bond {bond} out of bounds for an MPS of length {len(self)}")
     if bond < len(self):
       return self.tensors[bond].shape[0]
     return self.tensors[bond].shape[2]
@@ -261,8 +273,9 @@ class BaseMPS:
   def left_envs(self, sites: Sequence[int]) -> Dict:
     raise NotImplementedError()
 
-  def apply_transfer_operator(self, site: int, direction: Union[Text, int],
-                              matrix: Tensor) -> Tensor:
+  def apply_transfer_operator(
+    self, site: int, direction: Union[Text, int], matrix: Tensor
+  ) -> Tensor:
     """Compute the action of the MPS transfer-operator at site `site`.
 
     Args:
@@ -276,16 +289,17 @@ class BaseMPS:
     Returns:
       `Tensor`: The result of applying the MPS transfer-operator to `matrix`
     """
-    if direction in (1, 'l', 'left'):
-      return self.left_transfer_operator(self.tensors[site], matrix,
-                                         self.backend.conj(self.tensors[site]))
-    if direction in (-1, 'r', 'right'):
-      return self.right_transfer_operator(self.tensors[site], matrix,
-                                          self.backend.conj(self.tensors[site]))
-    raise ValueError(f'unknown value {direction} for direction')
+    if direction in (1, "l", "left"):
+      return self.left_transfer_operator(
+        self.tensors[site], matrix, self.backend.conj(self.tensors[site])
+      )
+    if direction in (-1, "r", "right"):
+      return self.right_transfer_operator(
+        self.tensors[site], matrix, self.backend.conj(self.tensors[site])
+      )
+    raise ValueError(f"unknown value {direction} for direction")
 
-  def measure_local_operator(self, ops: List[Tensor],
-                             sites: Sequence[int]) -> List:
+  def measure_local_operator(self, ops: List[Tensor], sites: Sequence[int]) -> List:
     """Measure the expectation value of local operators `ops` site `sites`.
 
     Args:
@@ -299,7 +313,7 @@ class BaseMPS:
       ValueError if `len(ops) != len(sites)`
     """
     if not len(ops) == len(sites):
-      raise ValueError('measure_1site_ops: len(ops) has to be len(sites)!')
+      raise ValueError("measure_1site_ops: len(ops) has to be len(sites)!")
     right_envs = self.right_envs(sites)
     left_envs = self.left_envs(sites)
     res = []
@@ -319,8 +333,9 @@ class BaseMPS:
       res.append(self.backend.item(result.tensor))
     return res
 
-  def measure_two_body_correlator(self, op1: Tensor, op2: Tensor, site1: int,
-                                  sites2: Sequence[int]) -> List:
+  def measure_two_body_correlator(
+    self, op1: Tensor, op2: Tensor, site1: int, sites2: Sequence[int]
+  ) -> List:
     """
     Compute the correlator
     :math:`\\langle` `op1[site1], op2[s]`:math:`\\rangle`
@@ -341,9 +356,9 @@ class BaseMPS:
     N = len(self)
     if site1 < 0:
       raise ValueError(
-          "Site site1 out of range: {} not between 0 <= site < N = {}.".format(
-              site1, N))
-    sites2 = np.array(sites2)  #enable logical indexing
+        "Site site1 out of range: {} not between 0 <= site < N = {}.".format(site1, N)
+      )
+    sites2 = np.array(sites2)  # enable logical indexing
 
     # we break the computation into two parts:
     # first we get all correlators <op2(site2) op1(site1)> with site2 < site1
@@ -358,14 +373,11 @@ class BaseMPS:
     # density matrices in one go. This is
     # more efficient than calling right_envs
     # for each site individually
-    rs = self.right_envs(
-        np.append(site1, np.mod(right_sites, N)).astype(np.int64))
-    ls = self.left_envs(
-        np.append(np.mod(left_sites, N), site1).astype(np.int64))
+    rs = self.right_envs(np.append(site1, np.mod(right_sites, N)).astype(np.int64))
+    ls = self.left_envs(np.append(np.mod(left_sites, N), site1).astype(np.int64))
 
     c = []
     if len(left_sites) > 0:
-
       A = Node(self.tensors[site1], backend=self.backend)
       O1 = Node(op1, backend=self.backend)
       conj_A = conj(A)
@@ -407,8 +419,8 @@ class BaseMPS:
           c.append(res.tensor)
         if n > n1:
           R = Node(
-              self.apply_transfer_operator(n % N, 'right', R.tensor),
-              backend=self.backend)
+            self.apply_transfer_operator(n % N, "right", R.tensor), backend=self.backend
+          )
 
       c = list(reversed(c))
 
@@ -474,18 +486,20 @@ class BaseMPS:
 
         if n < n2:
           L = Node(
-              self.apply_transfer_operator(n % N, 'left', L.tensor),
-              backend=self.backend)
+            self.apply_transfer_operator(n % N, "left", L.tensor), backend=self.backend
+          )
     return [self.backend.item(o) for o in c]
 
-  def apply_two_site_gate(self,
-                          gate: Tensor,
-                          site1: int,
-                          site2: int,
-                          max_singular_values: Optional[int] = None,
-                          max_truncation_err: Optional[float] = None,
-                          center_position: Optional[int] = None,
-                          relative: bool = False) -> Tensor:
+  def apply_two_site_gate(
+    self,
+    gate: Tensor,
+    site1: int,
+    site2: int,
+    max_singular_values: Optional[int] = None,
+    max_truncation_err: Optional[float] = None,
+    center_position: Optional[int] = None,
+    relative: bool = False,
+  ) -> Tensor:
     """Apply a two-site gate to an MPS. This routine will in general destroy
     any canonical form of the state. If a canonical form is needed, the user
     can restore it using `FiniteMPS.position`.
@@ -511,41 +525,48 @@ class BaseMPS:
         truncation.
     """
     if len(gate.shape) != 4:
-      raise ValueError('rank of gate is {} but has to be 4'.format(
-          len(gate.shape)))
+      raise ValueError("rank of gate is {} but has to be 4".format(len(gate.shape)))
     if site1 < 0 or site1 >= len(self) - 1:
       raise ValueError(
-          'site1 = {} is not between 0 <= site < N - 1 = {}'.format(
-              site1, len(self)))
+        "site1 = {} is not between 0 <= site < N - 1 = {}".format(site1, len(self))
+      )
     if site2 < 1 or site2 >= len(self):
-      raise ValueError('site2 = {} is not between 1 <= site < N = {}'.format(
-          site2, len(self)))
+      raise ValueError(
+        "site2 = {} is not between 1 <= site < N = {}".format(site2, len(self))
+      )
     if site2 <= site1:
-      raise ValueError('site2 = {} has to be larger than site2 = {}'.format(
-          site2, site1))
+      raise ValueError(
+        "site2 = {} has to be larger than site2 = {}".format(site2, site1)
+      )
     if site2 != site1 + 1:
-      raise ValueError("Found site2 ={}, site1={}. Only nearest "
-                       "neighbor gates are currently"
-                       "supported".format(site2, site1))
+      raise ValueError(
+        "Found site2 ={}, site1={}. Only nearest "
+        "neighbor gates are currently"
+        "supported".format(site2, site1)
+      )
 
     if center_position is not None and center_position not in (site1, site2):
-      raise ValueError(f"center_position = {center_position} not "
-                       f"in {(site1, site2)} ")
+      raise ValueError(f"center_position = {center_position} not in {(site1, site2)} ")
 
-    if (max_singular_values or
-        max_truncation_err) and self.center_position not in (site1, site2):
+    if (max_singular_values or max_truncation_err) and self.center_position not in (
+      site1,
+      site2,
+    ):
       raise ValueError(
-          'center_position = {}, but gate is applied at sites {}, {}. '
-          'Truncation should only be done if the gate '
-          'is applied at the center position of the MPS'.format(
-              self.center_position, site1, site2))
+        "center_position = {}, but gate is applied at sites {}, {}. "
+        "Truncation should only be done if the gate "
+        "is applied at the center position of the MPS".format(
+          self.center_position, site1, site2
+        )
+      )
 
-    use_svd = (max_truncation_err is not None) or (max_singular_values
-                                                   is not None)
+    use_svd = (max_truncation_err is not None) or (max_singular_values is not None)
     gate = self.backend.convert_to_tensor(gate)
-    tensor = ncon.ncon([self.tensors[site1], self.tensors[site2], gate],
-                       [[-1, 1, 2], [2, 3, -4], [-2, -3, 1, 3]],
-                       backend=self.backend)
+    tensor = ncon.ncon(
+      [self.tensors[site1], self.tensors[site2], gate],
+      [[-1, 1, 2], [2, 3, -4], [-2, -3, 1, 3]],
+      backend=self.backend,
+    )
 
     def set_center_position(site):
       if self.center_position is not None:
@@ -560,21 +581,22 @@ class BaseMPS:
 
     if use_svd:
       U, S, V, tw = self.backend.svd(
-          tensor,
-          pivot_axis=2,
-          max_singular_values=max_singular_values,
-          max_truncation_error=max_truncation_err,
-          relative=relative)
+        tensor,
+        pivot_axis=2,
+        max_singular_values=max_singular_values,
+        max_truncation_error=max_truncation_err,
+        relative=relative,
+      )
       if center_position == site2:
         left_tensor = U
-        right_tensor = ncon.ncon([self.backend.diagflat(S), V],
-                                 [[-1, 1], [1, -2, -3]],
-                                 backend=self.backend)
+        right_tensor = ncon.ncon(
+          [self.backend.diagflat(S), V], [[-1, 1], [1, -2, -3]], backend=self.backend
+        )
         set_center_position(site2)
       else:
-        left_tensor = ncon.ncon([U, self.backend.diagflat(S)],
-                                [[-1, -2, 1], [1, -3]],
-                                backend=self.backend)
+        left_tensor = ncon.ncon(
+          [U, self.backend.diagflat(S)], [[-1, -2, 1], [1, -3]], backend=self.backend
+        )
         right_tensor = V
         set_center_position(site1)
 
@@ -604,14 +626,14 @@ class BaseMPS:
       site: the site where the gate should be applied
     """
     if len(gate.shape) != 2:
-      raise ValueError('rank of gate is {} but has to be 2'.format(
-          len(gate.shape)))
+      raise ValueError("rank of gate is {} but has to be 2".format(len(gate.shape)))
     if site < 0 or site >= len(self):
-      raise ValueError('site = {} is not between 0 <= site < N={}'.format(
-          site, len(self)))
-    self.tensors[site] = ncon.ncon([gate, self.tensors[site]],
-                                   [[-2, 1], [-1, 1, -3]],
-                                   backend=self.backend.name)
+      raise ValueError(
+        "site = {} is not between 0 <= site < N={}".format(site, len(self))
+      )
+    self.tensors[site] = ncon.ncon(
+      [gate, self.tensors[site]], [[-2, 1], [-1, 1, -3]], backend=self.backend.name
+    )
 
   def check_orthonormality(self, which: Text, site: int) -> Tensor:
     """Check orthonormality of tensor at site `site`.
@@ -625,15 +647,17 @@ class BaseMPS:
     Raises:
       ValueError: If which is different from 'l','left', 'r' or 'right'.
     """
-    if which not in ('l', 'left', 'r', 'right'):
+    if which not in ("l", "left", "r", "right"):
       raise ValueError(
-          "Wrong value `which`={}. "
-          "`which` as to be 'l','left', 'r' or 'right.".format(which))
+        "Wrong value `which`={}. `which` as to be 'l','left', 'r' or 'right.".format(
+          which
+        )
+      )
     n1 = Node(
-        self.get_tensor(site),
-        backend=self.backend)  #we need to absorb the connector_matrix
+      self.get_tensor(site), backend=self.backend
+    )  # we need to absorb the connector_matrix
     n2 = conj(n1)
-    if which in ('l', 'left'):
+    if which in ("l", "left"):
       n1[0] ^ n2[0]
       n1[1] ^ n2[1]
     else:
@@ -641,12 +665,13 @@ class BaseMPS:
       n1[1] ^ n2[1]
     result = (n1 @ n2).tensor
     tmp = result - self.backend.eye(
-        N=self.backend.sparse_shape(result)[0],
-        M=self.backend.sparse_shape(result)[1],
-        dtype=self.dtype)
+      N=self.backend.sparse_shape(result)[0],
+      M=self.backend.sparse_shape(result)[1],
+      dtype=self.dtype,
+    )
     return self.backend.sqrt(
-        ncon.ncon([tmp, self.backend.conj(tmp)], [[1, 2], [1, 2]],
-                  backend=self.backend))
+      ncon.ncon([tmp, self.backend.conj(tmp)], [[1, 2], [1, 2]], backend=self.backend)
+    )
 
   # pylint: disable=inconsistent-return-statements
   def check_canonical(self) -> Any:
@@ -656,15 +681,14 @@ class BaseMPS:
       The L2 norm of the vector of local deviations.
     """
     if self.center_position is None:
-      warnings.warn(
-          "BaseMPS.center_position is `None`. Skipping `check_canonical`")
+      warnings.warn("BaseMPS.center_position is `None`. Skipping `check_canonical`")
       return
     deviations = []
     for site in range(len(self.tensors)):
       if site < self.center_position:
-        deviation = self.check_orthonormality('l', site)
+        deviation = self.check_orthonormality("l", site)
       elif site > self.center_position:
-        deviation = self.check_orthonormality('r', site)
+        deviation = self.check_orthonormality("r", site)
       else:
         continue
       deviations.append(deviation**2)
@@ -684,16 +708,18 @@ class BaseMPS:
     """
     if site >= len(self):
       raise IndexError(
-          'index `site` = {} is out of range for len(mps)= {}'.format(
-              site, len(self)))
+        "index `site` = {} is out of range for len(mps)= {}".format(site, len(self))
+      )
     if site < 0:
       raise ValueError(
-          'index `site` has to be larger than 0 (found `site`={}).'.format(
-              site))
+        "index `site` has to be larger than 0 (found `site`={}).".format(site)
+      )
     if (site == len(self) - 1) and (self.connector_matrix is not None):
-      return ncon.ncon([self.tensors[site], self.connector_matrix],
-                       [[-1, -2, 1], [1, -3]],
-                       backend=self.backend.name)
+      return ncon.ncon(
+        [self.tensors[site], self.connector_matrix],
+        [[-1, -2, 1], [1, -3]],
+        backend=self.backend.name,
+      )
     return self.tensors[site]
 
   def canonicalize(self, *args, **kwargs) -> np.number:

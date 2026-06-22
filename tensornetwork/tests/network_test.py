@@ -22,8 +22,11 @@ np_dtypes = [np.float32, np.float64, np.complex64, np.complex128, np.int32]
 tf_dtypes = [tf.float32, tf.float64, tf.complex64, tf.complex128, tf.int32]
 torch_dtypes = [torch.float32, torch.float64, torch.int32, torch.int64]
 jax_dtypes = [
-    jax.numpy.float32, jax.numpy.float64, jax.numpy.complex64,
-    jax.numpy.complex128, jax.numpy.int32
+  jax.numpy.float32,
+  jax.numpy.float64,
+  jax.numpy.complex64,
+  jax.numpy.complex128,
+  jax.numpy.int32,
 ]
 
 
@@ -32,8 +35,7 @@ def test_tnwork_copy_conj(backend):
     pytest.skip("Pytorch does not support complex numbers")
   a = tn.Node(np.array([1.0 + 2.0j, 2.0 - 1.0j]))
   nodes, _ = tn.copy({a}, conjugate=True)
-  np.testing.assert_allclose(nodes[a].tensor, np.array([1.0 - 2.0j,
-                                                        2.0 + 1.0j]))
+  np.testing.assert_allclose(nodes[a].tensor, np.array([1.0 - 2.0j, 2.0 + 1.0j]))
 
 
 def test_tnwork_copy(backend):
@@ -52,9 +54,9 @@ def test_tnwork_copy(backend):
 
 
 def test_tnwork_copy_names(backend):
-  a = tn.Node(np.random.rand(3, 3, 3), name='a', backend=backend)
-  b = tn.Node(np.random.rand(3, 3, 3), name='b', backend=backend)
-  c = tn.Node(np.random.rand(3, 3, 3), name='c', backend=backend)
+  a = tn.Node(np.random.rand(3, 3, 3), name="a", backend=backend)
+  b = tn.Node(np.random.rand(3, 3, 3), name="b", backend=backend)
+  c = tn.Node(np.random.rand(3, 3, 3), name="c", backend=backend)
   a[0] ^ b[1]
   b[2] ^ c[0]
   node_dict, edge_dict = tn.copy({a, b, c})
@@ -65,9 +67,9 @@ def test_tnwork_copy_names(backend):
 
 
 def test_tnwork_copy_identities(backend):
-  a = tn.Node(np.random.rand(3, 3, 3), name='a', backend=backend)
-  b = tn.Node(np.random.rand(3, 3, 3), name='b', backend=backend)
-  c = tn.Node(np.random.rand(3, 3, 3), name='c', backend=backend)
+  a = tn.Node(np.random.rand(3, 3, 3), name="a", backend=backend)
+  b = tn.Node(np.random.rand(3, 3, 3), name="b", backend=backend)
+  c = tn.Node(np.random.rand(3, 3, 3), name="c", backend=backend)
   a[0] ^ b[1]
   b[2] ^ c[0]
   node_dict, edge_dict = tn.copy({a, b, c})
@@ -78,9 +80,9 @@ def test_tnwork_copy_identities(backend):
 
 
 def test_tnwork_copy_subgraph(backend):
-  a = tn.Node(np.random.rand(3, 3, 3), name='a', backend=backend)
-  b = tn.Node(np.random.rand(3, 3, 3), name='b', backend=backend)
-  c = tn.Node(np.random.rand(3, 3, 3), name='c', backend=backend)
+  a = tn.Node(np.random.rand(3, 3, 3), name="a", backend=backend)
+  b = tn.Node(np.random.rand(3, 3, 3), name="b", backend=backend)
+  c = tn.Node(np.random.rand(3, 3, 3), name="c", backend=backend)
   a[0] ^ b[1]
   edge2 = b[2] ^ c[0]
   node_dict, edge_dict = tn.copy({a, b})
@@ -92,9 +94,9 @@ def test_tnwork_copy_subgraph(backend):
 
 
 def test_tnwork_copy_subgraph_2(backend):
-  a = tn.Node(np.random.rand(3, 3, 3), name='a', backend=backend)
-  b = tn.Node(np.random.rand(3, 3, 3), name='b', backend=backend)
-  c = tn.Node(np.random.rand(3, 3, 3), name='c', backend=backend)
+  a = tn.Node(np.random.rand(3, 3, 3), name="a", backend=backend)
+  b = tn.Node(np.random.rand(3, 3, 3), name="b", backend=backend)
+  c = tn.Node(np.random.rand(3, 3, 3), name="c", backend=backend)
   a[0] ^ b[1]
   edge2 = c[2] ^ b[0]
   node_dict, edge_dict = tn.copy({a, b})
@@ -113,8 +115,8 @@ def test_connect_axis_names(backend):
 
 
 def test_connect_twice_edge_axis_value_error(backend):
-  a = tn.Node(np.array([2.]), name="a", backend=backend)
-  b = tn.Node(np.array([2.]), name="b", backend=backend)
+  a = tn.Node(np.array([2.0]), name="a", backend=backend)
+  b = tn.Node(np.array([2.0]), name="b", backend=backend)
   tn.connect(a[0], b[0])
   with pytest.raises(ValueError):
     tn.connect(a[0], b[0])
@@ -230,14 +232,16 @@ def test_outer_product(backend):
   assert d.name == "D"
 
 
-@pytest.mark.parametrize("a, b, expected_val, expected_shape, expected_name", [
-    pytest.param(
-        np.ones((2, 4, 5)), np.ones(()), np.ones((2, 4, 5)), (2, 4, 5), "C"),
-    pytest.param(
-        np.ones(()), np.ones((2, 4, 5)), np.ones((2, 4, 5)), (2, 4, 5), "C"),
-])
-def test_outer_product_without_legs(a, b, expected_val, expected_shape,
-                                    expected_name, backend):
+@pytest.mark.parametrize(
+  "a, b, expected_val, expected_shape, expected_name",
+  [
+    pytest.param(np.ones((2, 4, 5)), np.ones(()), np.ones((2, 4, 5)), (2, 4, 5), "C"),
+    pytest.param(np.ones(()), np.ones((2, 4, 5)), np.ones((2, 4, 5)), (2, 4, 5), "C"),
+  ],
+)
+def test_outer_product_without_legs(
+  a, b, expected_val, expected_shape, expected_name, backend
+):
   node1 = tn.Node(a, name="A", backend=backend)
   node2 = tn.Node(b, name="B", backend=backend)
 
@@ -265,11 +269,11 @@ def test_get_all_edges(backend):
 
 
 def test_check_connected_value_error(backend):
-  a = tn.Node(np.array([2, 2.]), backend=backend)
-  b = tn.Node(np.array([2, 2.]), backend=backend)
+  a = tn.Node(np.array([2, 2.0]), backend=backend)
+  b = tn.Node(np.array([2, 2.0]), backend=backend)
   tn.connect(a[0], b[0])
-  c = tn.Node(np.array([2, 2.]), backend=backend)
-  d = tn.Node(np.array([2, 2.]), backend=backend)
+  c = tn.Node(np.array([2, 2.0]), backend=backend)
+  d = tn.Node(np.array([2, 2.0]), backend=backend)
   tn.connect(c[0], d[0])
   with pytest.raises(ValueError):
     tn.check_connected({a, b, c, d})
@@ -505,11 +509,8 @@ def test_contract_between_output_edge_order(backend):
   tn.connect(a[1], b[0])
   output_axis_names = ["b2", "a2"]
   c = tn.contract_between(
-      a,
-      b,
-      name="New Node",
-      axis_names=output_axis_names,
-      output_edge_order=[b[2], a[2]])
+    a, b, name="New Node", axis_names=output_axis_names, output_edge_order=[b[2], a[2]]
+  )
   # Check expected values.
   a_flat = np.reshape(np.transpose(a_val, (2, 1, 0, 3)), (4, 30))
   b_flat = np.reshape(np.transpose(b_val, (2, 0, 3, 1)), (6, 30))
@@ -534,8 +535,7 @@ def test_contract_between_outer_product_no_value_error(backend):
   a = tn.Node(a_val, backend=backend)
   b = tn.Node(b_val, backend=backend)
   output_axis_names = ["a0", "a1", "a2", "b0", "b1", "b2"]
-  c = tn.contract_between(
-      a, b, allow_outer_product=True, axis_names=output_axis_names)
+  c = tn.contract_between(a, b, allow_outer_product=True, axis_names=output_axis_names)
   assert c.shape == (2, 3, 4, 5, 6, 7)
   assert c.axis_names == output_axis_names
 
@@ -547,11 +547,12 @@ def test_contract_between_outer_product_output_edge_order(backend):
   b = tn.Node(b_val, backend=backend)
   output_axis_names = ["b0", "b1", "a0", "b2", "a1", "a2"]
   c = tn.contract_between(
-      a,
-      b,
-      allow_outer_product=True,
-      output_edge_order=[b[0], b[1], a[0], b[2], a[1], a[2]],
-      axis_names=output_axis_names)
+    a,
+    b,
+    allow_outer_product=True,
+    output_edge_order=[b[0], b[1], a[0], b[2], a[1], a[2]],
+    axis_names=output_axis_names,
+  )
   assert c.shape == (5, 6, 2, 7, 3, 4)
   assert c.axis_names == output_axis_names
 
@@ -569,8 +570,7 @@ def test_contract_between_trace_output_edge_order(backend):
   a_val = np.ones((2, 3, 2, 4))
   a = tn.Node(a_val, backend=backend)
   tn.connect(a[0], a[2])
-  c = tn.contract_between(
-      a, a, output_edge_order=[a[3], a[1]], axis_names=["3", "1"])
+  c = tn.contract_between(a, a, output_edge_order=[a[3], a[1]], axis_names=["3", "1"])
   assert c.shape == (4, 3)
   assert c.axis_names == ["3", "1"]
 
@@ -592,19 +592,19 @@ def test_remove_node(backend):
   assert broken_edges_by_name == {"0": a[0]}
   assert broken_edges_by_axis == {0: a[0]}
 
+
 def test_from_topology(backend):
-  #pylint: disable=unbalanced-tuple-unpacking
+  # pylint: disable=unbalanced-tuple-unpacking
   x, y, z = tn.from_topology(
-      "abc,bceg,adef", 
-      [np.ones((2,) * n) for n in [3, 4, 4]],
-      backend=backend)
-  assert x.axis_names == ['a', 'b', 'c']
-  assert y.axis_names == ['b', 'c', 'e', 'g']
-  assert z.axis_names == ['a', 'd', 'e', 'f']
-  assert x['a'] is z['a']
-  assert x['b'] is y['b']
-  assert x['c'] is y['c']
-  assert z['d'].is_dangling()
-  assert y['e'] is z['e']
-  assert z['f'].is_dangling()
-  assert y['g'].is_dangling()
+    "abc,bceg,adef", [np.ones((2,) * n) for n in [3, 4, 4]], backend=backend
+  )
+  assert x.axis_names == ["a", "b", "c"]
+  assert y.axis_names == ["b", "c", "e", "g"]
+  assert z.axis_names == ["a", "d", "e", "f"]
+  assert x["a"] is z["a"]
+  assert x["b"] is y["b"]
+  assert x["c"] is y["c"]
+  assert z["d"].is_dangling()
+  assert y["e"] is z["e"]
+  assert z["f"].is_dangling()
+  assert y["g"].is_dangling()

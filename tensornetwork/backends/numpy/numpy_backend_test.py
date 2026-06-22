@@ -37,7 +37,8 @@ def test_reshape():
 def test_transpose():
   backend = numpy_backend.NumPyBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
   actual = backend.transpose(a, [2, 0, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
   np.testing.assert_allclose(expected, actual)
@@ -46,8 +47,9 @@ def test_transpose():
 def test_transpose_noperm():
   backend = numpy_backend.NumPyBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
-  actual = backend.transpose(a) # [2, 1, 0]
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
+  actual = backend.transpose(a)  # [2, 1, 0]
   actual = backend.transpose(actual, perm=[0, 2, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
   np.testing.assert_allclose(expected, actual)
@@ -65,16 +67,18 @@ def test_shape_concat():
 def test_slice():
   backend = numpy_backend.NumPyBackend()
   a = backend.convert_to_tensor(
-      np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
+    np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+  )
   actual = backend.slice(a, (1, 1), (2, 2))
-  expected = np.array([[5., 6.], [8., 9.]])
+  expected = np.array([[5.0, 6.0], [8.0, 9.0]])
   np.testing.assert_allclose(expected, actual)
 
 
 def test_slice_raises_error():
   backend = numpy_backend.NumPyBackend()
   a = backend.convert_to_tensor(
-      np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
+    np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+  )
   with pytest.raises(ValueError):
     backend.slice(a, (1, 1), (2, 2, 2))
 
@@ -104,7 +108,7 @@ def test_shape_prod():
 
 def test_sqrt():
   backend = numpy_backend.NumPyBackend()
-  a = backend.convert_to_tensor(np.array([4., 9.]))
+  a = backend.convert_to_tensor(np.array([4.0, 9.0]))
   actual = backend.sqrt(a)
   expected = np.array([2, 3])
   np.testing.assert_allclose(expected, actual)
@@ -124,8 +128,7 @@ def test_outer_product():
   a = backend.convert_to_tensor(2 * np.ones((2, 1)))
   b = backend.convert_to_tensor(np.ones((1, 2, 2)))
   actual = backend.outer_product(a, b)
-  expected = np.array([[[[[2.0, 2.0], [2.0, 2.0]]]], [[[[2.0, 2.0], [2.0,
-                                                                     2.0]]]]])
+  expected = np.array([[[[[2.0, 2.0], [2.0, 2.0]]]], [[[[2.0, 2.0], [2.0, 2.0]]]]])
   np.testing.assert_allclose(expected, actual)
 
 
@@ -133,7 +136,7 @@ def test_einsum():
   backend = numpy_backend.NumPyBackend()
   a = backend.convert_to_tensor(2 * np.ones((2, 1)))
   b = backend.convert_to_tensor(np.ones((1, 2, 2)))
-  actual = backend.einsum('ij,jil->l', a, b)
+  actual = backend.einsum("ij,jil->l", a, b)
   expected = np.array([4.0, 4.0])
   np.testing.assert_allclose(expected, actual)
 
@@ -257,8 +260,7 @@ def test_random_uniform_boundaries(dtype):
   backend = numpy_backend.NumPyBackend()
   a = backend.random_uniform((4, 4), seed=10, dtype=dtype)
   b = backend.random_uniform((4, 4), (lb, ub), seed=10, dtype=dtype)
-  assert ((a >= 0).all() and (a <= 1).all() and (b >= lb).all() and
-          (b <= ub).all())
+  assert (a >= 0).all() and (a <= 1).all() and (b >= lb).all() and (b <= ub).all()
 
 
 def test_random_uniform_behavior():
@@ -369,54 +371,58 @@ def test_eigsh_lanczos_reorthogonalize(dtype, numeig):
     return np.dot(mat, x)
 
   eta1, U1 = backend.eigsh_lanczos(
-      mv, [H],
-      shape=(D,),
-      dtype=dtype,
-      numeig=numeig,
-      num_krylov_vecs=D,
-      reorthogonalize=True,
-      ndiag=1,
-      tol=10**(-12),
-      delta=10**(-12))
+    mv,
+    [H],
+    shape=(D,),
+    dtype=dtype,
+    numeig=numeig,
+    num_krylov_vecs=D,
+    reorthogonalize=True,
+    ndiag=1,
+    tol=10 ** (-12),
+    delta=10 ** (-12),
+  )
   eta2, U2 = np.linalg.eigh(H)
 
   np.testing.assert_allclose(eta1[0:numeig], eta2[0:numeig])
   for n in range(numeig):
     v2 = U2[:, n]
-    v2 /= np.sum(v2)  #fix phases
+    v2 /= np.sum(v2)  # fix phases
     v1 = np.reshape(U1[n], (D))
     v1 /= np.sum(v1)
 
-    np.testing.assert_allclose(v1, v2, rtol=10**(-5), atol=10**(-5))
+    np.testing.assert_allclose(v1, v2, rtol=10 ** (-5), atol=10 ** (-5))
 
 
 def test_eigsh_lanczos_raises():
   backend = numpy_backend.NumPyBackend()
-  with pytest.raises(
-      ValueError, match='`num_krylov_vecs` >= `numeig` required!'):
+  with pytest.raises(ValueError, match="`num_krylov_vecs` >= `numeig` required!"):
     backend.eigsh_lanczos(lambda x: x, numeig=10, num_krylov_vecs=9)
   with pytest.raises(
-      ValueError,
-      match="Got numeig = 2 > 1 and `reorthogonalize = False`. "
-      "Use `reorthogonalize=True` for `numeig > 1`"):
+    ValueError,
+    match="Got numeig = 2 > 1 and `reorthogonalize = False`. "
+    "Use `reorthogonalize=True` for `numeig > 1`",
+  ):
     backend.eigsh_lanczos(lambda x: x, numeig=2, reorthogonalize=False)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x, shape=(10,), dtype=None)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x, shape=None, dtype=np.float64)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x)
-  with pytest.raises(
-      TypeError, match="Expected a `np.ndarray`. Got <class 'list'>"):
+  with pytest.raises(TypeError, match="Expected a `np.ndarray`. Got <class 'list'>"):
     backend.eigsh_lanczos(lambda x: x, initial_state=[1, 2, 3])
 
 
@@ -426,39 +432,39 @@ def test_gmres_raises():
   N = 10
 
   b = np.zeros((N,))
-  x0 = np.zeros((N+1),)
+  x0 = np.zeros(
+    (N + 1),
+  )
   diff = "If x0 is supplied, its shape"
-  with pytest.raises(ValueError, match=diff): # x0, b have different sizes
+  with pytest.raises(ValueError, match=diff):  # x0, b have different sizes
     backend.gmres(dummy_mv, b, x0=x0)
 
   x0 = np.zeros((N,), dtype=np.float32)
   b = np.zeros((N,), dtype=np.float64)
-  diff = (f"If x0 is supplied, its dtype, {x0.dtype}, must match b's"
-          f", {b.dtype}.")
-  with pytest.raises(TypeError, match=diff): # x0, b have different dtypes
+  diff = f"If x0 is supplied, its dtype, {x0.dtype}, must match b's, {b.dtype}."
+  with pytest.raises(TypeError, match=diff):  # x0, b have different dtypes
     backend.gmres(dummy_mv, b, x0=x0)
 
   x0 = np.zeros((N,))
-  b = np.zeros((N,)).reshape(2, N//2)
+  b = np.zeros((N,)).reshape(2, N // 2)
   diff = "If x0 is supplied, its shape"
-  with pytest.raises(ValueError, match=diff): # x0, b have different shapes
+  with pytest.raises(ValueError, match=diff):  # x0, b have different shapes
     backend.gmres(dummy_mv, b, x0=x0)
 
   num_krylov_vectors = 0
-  diff = (f"num_krylov_vectors must be positive, not"
-          f"{num_krylov_vectors}.")
-  with pytest.raises(ValueError, match=diff): # num_krylov_vectors <= 0
+  diff = f"num_krylov_vectors must be positive, not{num_krylov_vectors}."
+  with pytest.raises(ValueError, match=diff):  # num_krylov_vectors <= 0
     backend.gmres(dummy_mv, b, num_krylov_vectors=num_krylov_vectors)
-  num_krylov_vectors = N+1
+  num_krylov_vectors = N + 1
 
-  tol = -1.
-  diff = (f"tol = {tol} must be positive.")
-  with pytest.raises(ValueError, match=diff): # tol < 0
+  tol = -1.0
+  diff = f"tol = {tol} must be positive."
+  with pytest.raises(ValueError, match=diff):  # tol < 0
     backend.gmres(dummy_mv, b, tol=tol)
 
   atol = -1
-  diff = (f"atol = {atol} must be positive.")
-  with pytest.raises(ValueError, match=diff): # atol < 0
+  diff = f"atol = {atol} must be positive."
+  with pytest.raises(ValueError, match=diff):  # atol < 0
     backend.gmres(dummy_mv, b, atol=atol)
 
 
@@ -469,10 +475,12 @@ def test_gmres_on_small_known_problem(dtype):
   b = np.array([3, 2], dtype=dtype)
   x0 = np.ones(2, dtype=dtype)
   n_kry = 2
+
   def A_mv(x):
     return A @ x
+
   x, _ = backend.gmres(A_mv, b, x0=x0, num_krylov_vectors=n_kry)
-  solution = np.array([2., 1.], dtype=dtype)
+  solution = np.array([2.0, 1.0], dtype=dtype)
   assert x.dtype == solution.dtype
   np.testing.assert_allclose(x, solution)
 
@@ -484,13 +492,15 @@ def test_gmres_on_larger_random_problem(dtype):
   vecshape = (100,)
   A = backend.randn(matshape, dtype=dtype, seed=10)
   solution = backend.randn(vecshape, dtype=dtype, seed=10)
+
   def A_mv(x):
     return A @ x
+
   b = A_mv(solution)
   tol = b.size * np.finfo(dtype).eps
   x, _ = backend.gmres(A_mv, b, tol=tol, num_krylov_vectors=100)
-  err = np.linalg.norm(np.abs(x)-np.abs(solution))
-  rtol = tol*np.linalg.norm(b)
+  err = np.linalg.norm(np.abs(x) - np.abs(solution))
+  rtol = tol * np.linalg.norm(b)
   atol = tol
   assert err < max(rtol, atol)
 
@@ -504,24 +514,28 @@ def test_gmres_not_matrix(dtype):
   A = backend.reshape(A, (2, 50, 2, 50))
   solution = backend.randn(vecshape, dtype=dtype, seed=10)
   solution = backend.reshape(solution, (2, 50))
+
   def A_mv(x):
-    return backend.einsum('ijkl,kl', A, x)
+    return backend.einsum("ijkl,kl", A, x)
+
   b = A_mv(solution)
   tol = b.size * np.finfo(dtype).eps
   x, _ = backend.gmres(A_mv, b, tol=tol, num_krylov_vectors=100)
-  err = np.linalg.norm(np.abs(x)-np.abs(solution))
-  rtol = tol*np.linalg.norm(b)
+  err = np.linalg.norm(np.abs(x) - np.abs(solution))
+  rtol = tol * np.linalg.norm(b)
   atol = tol
   assert err < max(rtol, atol)
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 2),
-    pytest.param(1., np.ones((1, 2, 3)), 2 * np.ones((1, 2, 3))),
-    pytest.param(2. * np.ones(()), 1., 3. * np.ones((1, 2, 3))),
-    pytest.param(2. * np.ones(()), 1. * np.ones((1, 2, 3)), 3. * np.ones(
-        (1, 2, 3))),
-])
+    pytest.param(1.0, np.ones((1, 2, 3)), 2 * np.ones((1, 2, 3))),
+    pytest.param(2.0 * np.ones(()), 1.0, 3.0 * np.ones((1, 2, 3))),
+    pytest.param(2.0 * np.ones(()), 1.0 * np.ones((1, 2, 3)), 3.0 * np.ones((1, 2, 3))),
+  ],
+)
 def test_addition(a, b, expected):
   backend = numpy_backend.NumPyBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -532,12 +546,15 @@ def test_addition(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 0),
-    pytest.param(2., 1. * np.ones((1, 2, 3)), 1. * np.ones((1, 2, 3))),
-    pytest.param(np.ones((1, 2, 3)), 1., np.zeros((1, 2, 3))),
+    pytest.param(2.0, 1.0 * np.ones((1, 2, 3)), 1.0 * np.ones((1, 2, 3))),
+    pytest.param(np.ones((1, 2, 3)), 1.0, np.zeros((1, 2, 3))),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.zeros((1, 2, 3))),
-])
+  ],
+)
 def test_subtraction(a, b, expected):
   backend = numpy_backend.NumPyBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -548,12 +565,15 @@ def test_subtraction(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 1),
-    pytest.param(2., 1. * np.ones((1, 2, 3)), 2. * np.ones((1, 2, 3))),
-    pytest.param(np.ones((1, 2, 3)), 1., np.ones((1, 2, 3))),
+    pytest.param(2.0, 1.0 * np.ones((1, 2, 3)), 2.0 * np.ones((1, 2, 3))),
+    pytest.param(np.ones((1, 2, 3)), 1.0, np.ones((1, 2, 3))),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.ones((1, 2, 3))),
-])
+  ],
+)
 def test_multiply(a, b, expected):
   backend = numpy_backend.NumPyBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -564,13 +584,15 @@ def test_multiply(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
-    pytest.param(2., 2., 1.),
-    pytest.param(2., 0.5 * np.ones((1, 2, 3)), 4. * np.ones((1, 2, 3))),
-    pytest.param(np.ones(()), 2., 0.5 * np.ones((1, 2, 3))),
-    pytest.param(
-        np.ones(()), 2. * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
-])
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
+    pytest.param(2.0, 2.0, 1.0),
+    pytest.param(2.0, 0.5 * np.ones((1, 2, 3)), 4.0 * np.ones((1, 2, 3))),
+    pytest.param(np.ones(()), 2.0, 0.5 * np.ones((1, 2, 3))),
+    pytest.param(np.ones(()), 2.0 * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
+  ],
+)
 def test_divide(a, b, expected):
   backend = numpy_backend.NumPyBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -582,29 +604,29 @@ def test_divide(a, b, expected):
 
 
 def find(which, vector):
-  if which == 'LM':
+  if which == "LM":
     index = np.argmax(np.abs(vector))
     val = np.abs(vector[index])
-  if which == 'SM':
+  if which == "SM":
     index = np.argmin(np.abs(vector))
     val = np.abs(vector[index])
-  if which == 'LR':
+  if which == "LR":
     index = np.argmax(np.real(vector))
     val = np.real(vector[index])
-  if which == 'SR':
+  if which == "SR":
     index = np.argmin(np.real(vector))
     val = np.real(vector[index])
-  if which == 'LI':
+  if which == "LI":
     index = np.argmax(np.imag(vector))
     val = np.imag(vector[index])
-  if which == 'SI':
+  if which == "SI":
     index = np.argmin(np.imag(vector))
     val = np.imag(vector[index])
   return val, index
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
-@pytest.mark.parametrize("which", ['LM', 'LR', 'SM', 'SR'])
+@pytest.mark.parametrize("which", ["LM", "LR", "SM", "SR"])
 def test_eigs(dtype, which):
 
   backend = numpy_backend.NumPyBackend()
@@ -627,7 +649,7 @@ def test_eigs(dtype, which):
   np.testing.assert_allclose(v1, v2)
 
 
-@pytest.mark.parametrize("which", ['SI', 'LI'])
+@pytest.mark.parametrize("which", ["SI", "LI"])
 def test_eigs_raises_error_for_unsupported_which(which):
   backend = numpy_backend.NumPyBackend()
   A = backend.randn((4, 4), dtype=np.float64)
@@ -642,13 +664,14 @@ def test_eigs_raises():
   with pytest.raises(ValueError, match=""):
     backend.eigs(A, initial_state=init, num_krylov_vecs=10, numeig=9)
   with pytest.raises(
-      ValueError,
-      match="if no `initial_state` is passed, then `shape` and"
-      "`dtype` have to be provided"):
+    ValueError,
+    match="if no `initial_state` is passed, then `shape` and"
+    "`dtype` have to be provided",
+  ):
     backend.eigsh_lanczos(lambda x: x, shape=(10,), dtype=None)
 
 
-@pytest.mark.parametrize("which", ['LM', 'LR', 'SM', 'SR'])
+@pytest.mark.parametrize("which", ["LM", "LR", "SM", "SR"])
 def test_eigs_no_init(which):
   backend = numpy_backend.NumPyBackend()
   dtype = np.complex128
@@ -659,8 +682,7 @@ def test_eigs_no_init(which):
   def mv(x, mat):
     return np.dot(mat, x)
 
-  eta1, U1 = backend.eigs(
-      mv, [H], shape=(D,), dtype=dtype, numeig=1, which=which)
+  eta1, U1 = backend.eigs(mv, [H], shape=(D,), dtype=dtype, numeig=1, which=which)
   eta2, U2 = np.linalg.eig(H)
   val, index = find(which, eta2)
   v2 = U2[:, index]
@@ -672,7 +694,7 @@ def test_eigs_no_init(which):
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
-@pytest.mark.parametrize("which", ['LM', 'LR', 'SM', 'SR'])
+@pytest.mark.parametrize("which", ["LM", "LR", "SM", "SR"])
 def test_eigs_init(dtype, which):
   backend = numpy_backend.NumPyBackend()
   D = 16
@@ -792,14 +814,19 @@ def test_sparse_shape():
   np.testing.assert_allclose(backend.sparse_shape(tensor), tensor.shape)
 
 
-@pytest.mark.parametrize("dtype,method", [(np.float64, "sin"),
-                                          (np.complex128, "sin"),
-                                          (np.float64, "cos"),
-                                          (np.complex128, "cos"),
-                                          (np.float64, "exp"),
-                                          (np.complex128, "exp"),
-                                          (np.float64, "log"),
-                                          (np.complex128, "log")])
+@pytest.mark.parametrize(
+  "dtype,method",
+  [
+    (np.float64, "sin"),
+    (np.complex128, "sin"),
+    (np.float64, "cos"),
+    (np.complex128, "cos"),
+    (np.float64, "exp"),
+    (np.complex128, "exp"),
+    (np.float64, "log"),
+    (np.complex128, "log"),
+  ],
+)
 def test_elementwise_ops(dtype, method):
   backend = numpy_backend.NumPyBackend()
   tensor = backend.randn((4, 3, 2), dtype=dtype, seed=10)
@@ -810,8 +837,9 @@ def test_elementwise_ops(dtype, method):
   np.testing.assert_almost_equal(tensor1, tensor2)
 
 
-@pytest.mark.parametrize("dtype,method", [(np.float64, "expm"),
-                                          (np.complex128, "expm")])
+@pytest.mark.parametrize(
+  "dtype,method", [(np.float64, "expm"), (np.complex128, "expm")]
+)
 def test_matrix_ops(dtype, method):
   backend = numpy_backend.NumPyBackend()
   matrix = backend.randn((4, 4), dtype=dtype, seed=10)
@@ -820,8 +848,9 @@ def test_matrix_ops(dtype, method):
   np.testing.assert_almost_equal(matrix1, matrix2)
 
 
-@pytest.mark.parametrize("dtype,method", [(np.float64, "expm"),
-                                          (np.complex128, "expm")])
+@pytest.mark.parametrize(
+  "dtype,method", [(np.float64, "expm"), (np.complex128, "expm")]
+)
 def test_matrix_ops_raises(dtype, method):
   backend = numpy_backend.NumPyBackend()
   matrix = backend.randn((4, 4, 4), dtype=dtype, seed=10)
@@ -930,6 +959,7 @@ def test_trace(dtype, offset, axis1, axis2):
     expected = np.trace(array, offset=offset, axis1=axis1, axis2=axis2)
     np.testing.assert_allclose(actual, expected)
 
+
 @pytest.mark.parametrize("pivot_axis", [-1, 1, 2])
 @pytest.mark.parametrize("dtype", np_dtypes)
 def test_pivot(dtype, pivot_axis):
@@ -941,7 +971,8 @@ def test_pivot(dtype, pivot_axis):
   actual = backend.pivot(tensor, pivot_axis=pivot_axis)
   np.testing.assert_allclose(expected, actual)
 
-@pytest.mark.parametrize('dtype', np_dtypes)
+
+@pytest.mark.parametrize("dtype", np_dtypes)
 def test_serialize(dtype):
   shape = (8, 6, 4, 2, 1)
   backend = numpy_backend.NumPyBackend()
@@ -950,7 +981,8 @@ def test_serialize(dtype):
   assert isinstance(s, str)
   assert (tensor == backend.deserialize_tensor(s)).all()
 
-@pytest.mark.parametrize('dtype', np_dtypes)
+
+@pytest.mark.parametrize("dtype", np_dtypes)
 def test_power(dtype):
   shape = (4, 3, 2)
   backend = numpy_backend.NumPyBackend()
@@ -964,11 +996,13 @@ def test_power(dtype):
   expected = np.power(base_tensor, power)
   np.testing.assert_allclose(expected, actual)
 
+
 @pytest.mark.parametrize("dtype", np_dtypes)
 def test_item(dtype):
   backend = numpy_backend.NumPyBackend()
   tensor = backend.randn((1,), dtype=dtype, seed=10)
   assert tensor.item() == backend.item(tensor)
+
 
 @pytest.mark.parametrize("dtype", np_dtypes)
 def test_eps(dtype):

@@ -36,20 +36,28 @@ def test_split_node_full_svd_names(backend):
   a = tn.Node(np.random.rand(10, 10), backend=backend)
   e1 = a[0]
   e2 = a[1]
-  left, s, right, _, = tn.split_node_full_svd(
-      a, [e1], [e2],
-      left_name='left',
-      middle_name='center',
-      right_name='right',
-      left_edge_name='left_edge',
-      right_edge_name='right_edge')
-  assert left.name == 'left'
-  assert s.name == 'center'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'left_edge'
-  assert s[0].name == 'left_edge'
-  assert s[1].name == 'right_edge'
-  assert right.edges[0].name == 'right_edge'
+  (
+    left,
+    s,
+    right,
+    _,
+  ) = tn.split_node_full_svd(
+    a,
+    [e1],
+    [e2],
+    left_name="left",
+    middle_name="center",
+    right_name="right",
+    left_edge_name="left_edge",
+    right_edge_name="right_edge",
+  )
+  assert left.name == "left"
+  assert s.name == "center"
+  assert right.name == "right"
+  assert left.edges[-1].name == "left_edge"
+  assert s[0].name == "left_edge"
+  assert s[1].name == "right_edge"
+  assert right.edges[0].name == "right_edge"
 
 
 def test_split_node_relative_tolerance(backend):
@@ -57,18 +65,28 @@ def test_split_node_relative_tolerance(backend):
   relative = tn.Node(np.diag([2.0, 1.0, 0.2, 0.1]), backend=backend)
   max_truncation_err = 0.2
 
-  _, _, trunc_sv_absolute, = tn.split_node(
-      node=absolute,
-      left_edges=[absolute[0]],
-      right_edges=[absolute[1]],
-      max_truncation_err=max_truncation_err,
-      relative=False)
-  _, _, trunc_sv_relative, = tn.split_node(
-      node=relative,
-      left_edges=[relative[0]],
-      right_edges=[relative[1]],
-      max_truncation_err=max_truncation_err,
-      relative=True)
+  (
+    _,
+    _,
+    trunc_sv_absolute,
+  ) = tn.split_node(
+    node=absolute,
+    left_edges=[absolute[0]],
+    right_edges=[absolute[1]],
+    max_truncation_err=max_truncation_err,
+    relative=False,
+  )
+  (
+    _,
+    _,
+    trunc_sv_relative,
+  ) = tn.split_node(
+    node=relative,
+    left_edges=[relative[0]],
+    right_edges=[relative[1]],
+    max_truncation_err=max_truncation_err,
+    relative=True,
+  )
   np.testing.assert_almost_equal(trunc_sv_absolute, [0.1])
   np.testing.assert_almost_equal(trunc_sv_relative, [0.2, 0.1])
 
@@ -78,18 +96,30 @@ def test_split_node_full_svd_relative_tolerance(backend):
   relative = tn.Node(np.diag([2.0, 1.0, 0.2, 0.1]), backend=backend)
   max_truncation_err = 0.2
 
-  _, _, _, trunc_sv_absolute, = tn.split_node_full_svd(
-      node=absolute,
-      left_edges=[absolute[0]],
-      right_edges=[absolute[1]],
-      max_truncation_err=max_truncation_err,
-      relative=False)
-  _, _, _, trunc_sv_relative, = tn.split_node_full_svd(
-      node=relative,
-      left_edges=[relative[0]],
-      right_edges=[relative[1]],
-      max_truncation_err=max_truncation_err,
-      relative=True)
+  (
+    _,
+    _,
+    _,
+    trunc_sv_absolute,
+  ) = tn.split_node_full_svd(
+    node=absolute,
+    left_edges=[absolute[0]],
+    right_edges=[absolute[1]],
+    max_truncation_err=max_truncation_err,
+    relative=False,
+  )
+  (
+    _,
+    _,
+    _,
+    trunc_sv_relative,
+  ) = tn.split_node_full_svd(
+    node=relative,
+    left_edges=[relative[0]],
+    right_edges=[relative[1]],
+    max_truncation_err=max_truncation_err,
+    relative=True,
+  )
   np.testing.assert_almost_equal(trunc_sv_absolute, [0.1])
   np.testing.assert_almost_equal(trunc_sv_relative, [0.2, 0.1])
 
@@ -103,16 +133,12 @@ def test_split_node_rq_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right = tn.split_node_rq(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_qr_names(backend):
@@ -124,16 +150,12 @@ def test_split_node_qr_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right = tn.split_node_qr(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_names(backend):
@@ -145,16 +167,12 @@ def test_split_node_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right, _ = tn.split_node(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_rq_unitarity_complex(backend):
@@ -289,10 +307,10 @@ def test_reachable_disconnected_1(backend):
 def test_reachable_disconnected_2(backend):
   nodes = [tn.Node(np.random.rand(2, 2, 2), backend=backend) for _ in range(4)]
   nodes[1][1] ^ nodes[2][0]  # connect 2nd and third node
-  assert set(tn.reachable([nodes[0],
-                           nodes[1]])) == {nodes[0], nodes[1], nodes[2]}
+  assert set(tn.reachable([nodes[0], nodes[1]])) == {nodes[0], nodes[1], nodes[2]}
   nodes[2][1] ^ nodes[3][0]  # connect third and fourth node
   assert set(tn.reachable([nodes[0], nodes[1]])) == set(nodes)
+
 
 def test_reachable_raises(backend):
   nodes = [tn.Node(np.random.rand(2, 2, 2), backend=backend), 5]
@@ -366,8 +384,8 @@ def test_reduced_density_contraction(backend):
   if backend == "pytorch":
     pytest.skip("pytorch doesn't support complex numbers")
   a = tn.Node(
-      np.array([[0.0, 1.0j], [-1.0j, 0.0]], dtype=np.complex64),
-      backend=backend)
+    np.array([[0.0, 1.0j], [-1.0j, 0.0]], dtype=np.complex64), backend=backend
+  )
   tn.reduced_density([a[0]])
   result = tn.contractors.greedy(tn.reachable(a), ignore_edge_order=True)
   np.testing.assert_allclose(result.tensor, np.eye(2))
@@ -557,9 +575,9 @@ def test_redirect_raises(backend):
 
 
 def test_copy(backend):
-  a = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name='a')
-  b = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name='b')
-  c = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name='c')
+  a = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name="a")
+  b = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name="b")
+  c = tn.Node(np.ones((2, 2, 2, 2)), backend=backend, name="c")
 
   a[0] ^ a[1]
   a[2] ^ b[1]

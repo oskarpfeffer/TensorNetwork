@@ -19,8 +19,8 @@ from tensornetwork.contractors import auto
 from tensornetwork.contractors.opt_einsum_paths import path_contractors
 from tensornetwork.ncon_interface import ncon
 
-@pytest.fixture(
-    name="path_algorithm", params=["optimal", "branch", "greedy", "auto"])
+
+@pytest.fixture(name="path_algorithm", params=["optimal", "branch", "greedy", "auto"])
 def path_algorithm_fixture(request):
   return getattr(path_contractors, request.param)
 
@@ -76,7 +76,6 @@ def test_custom_sanity_check(backend):
   nodes = [a, b]
 
   class PathOptimizer:
-
     def __call__(self, inputs, output, size_dict, memory_limit=None):
       return [(0, 1)]
 
@@ -120,7 +119,8 @@ def test_multiple_partial_contractions(backend, path_algorithm):
   np.testing.assert_allclose(cd.tensor, c_tensor @ d_tensor)
   result = path_algorithm({ab, cd})
   np.testing.assert_allclose(
-      result.tensor, np.trace(a_tensor @ b_tensor @ c_tensor @ d_tensor))
+    result.tensor, np.trace(a_tensor @ b_tensor @ c_tensor @ d_tensor)
+  )
 
 
 def test_single_node_reorder(backend, path_algorithm):
@@ -236,11 +236,12 @@ def test_contract_path(backend, algorithm):
   nodes = [mps, mpsc, mpo, L]
   path = path_contractors.path_solver(algorithm=algorithm, nodes=nodes)
   order = [mpo[1], mps[2], mpsc[2]]
-  res = path_contractors.contract_path(
-      path=path, nodes=nodes, output_edge_order=order)
-  exp = ncon([mps.tensor, mpsc.tensor, L.tensor, mpo.tensor],
-             [[1, 2, -2], [5, 4, -3], [3, 1, 5], [3, -1, 4, 2]],
-             backend=backend)
+  res = path_contractors.contract_path(path=path, nodes=nodes, output_edge_order=order)
+  exp = ncon(
+    [mps.tensor, mpsc.tensor, L.tensor, mpo.tensor],
+    [[1, 2, -2], [5, 4, -3], [3, 1, 5], [3, -1, 4, 2]],
+    backend=backend,
+  )
   np.testing.assert_allclose(res.tensor, exp)
 
 

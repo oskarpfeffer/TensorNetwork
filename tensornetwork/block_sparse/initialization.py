@@ -19,8 +19,9 @@ from tensornetwork.block_sparse.blocksparsetensor import BlockSparseTensor
 from typing import Tuple, Type, Optional, Sequence
 
 
-def ones(indices: Sequence[Index],
-         dtype: Optional[Type[np.number]] = None) -> BlockSparseTensor:
+def ones(
+  indices: Sequence[Index], dtype: Optional[Type[np.number]] = None
+) -> BlockSparseTensor:
   """
   Initialize a symmetric tensor with ones.
   Args:
@@ -33,8 +34,9 @@ def ones(indices: Sequence[Index],
   return BlockSparseTensor.ones(indices, dtype)
 
 
-def zeros(indices: Sequence[Index],
-          dtype: Optional[Type[np.number]] = None) -> BlockSparseTensor:
+def zeros(
+  indices: Sequence[Index], dtype: Optional[Type[np.number]] = None
+) -> BlockSparseTensor:
   """
   Initialize a symmetric tensor with zeros.
   Args:
@@ -47,8 +49,9 @@ def zeros(indices: Sequence[Index],
   return BlockSparseTensor.zeros(indices, dtype)
 
 
-def randn(indices: Sequence[Index],
-          dtype: Optional[Type[np.number]] = None) -> BlockSparseTensor:
+def randn(
+  indices: Sequence[Index], dtype: Optional[Type[np.number]] = None
+) -> BlockSparseTensor:
   """
   Initialize a random symmetric tensor from random normal distribution.
   Args:
@@ -61,9 +64,11 @@ def randn(indices: Sequence[Index],
   return BlockSparseTensor.randn(indices, dtype)
 
 
-def random(indices: Sequence[Index],
-           boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
-           dtype: Optional[Type[np.number]] = None) -> BlockSparseTensor:
+def random(
+  indices: Sequence[Index],
+  boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
+  dtype: Optional[Type[np.number]] = None,
+) -> BlockSparseTensor:
   """
   Initialize a random symmetric tensor from random uniform distribution.
   Args:
@@ -87,11 +92,12 @@ def empty_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
     BlockSparseTensor
   """
   return BlockSparseTensor(
-      np.empty(tensor.data.size, dtype=tensor.dtype),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    np.empty(tensor.data.size, dtype=tensor.dtype),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )
 
 
 def ones_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
@@ -104,11 +110,12 @@ def ones_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
     BlockSparseTensor
   """
   return BlockSparseTensor(
-      np.ones(tensor.data.size, dtype=tensor.dtype),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    np.ones(tensor.data.size, dtype=tensor.dtype),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )
 
 
 def zeros_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
@@ -121,11 +128,12 @@ def zeros_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
     BlockSparseTensor
   """
   return BlockSparseTensor(
-      np.zeros(tensor.data.size, dtype=tensor.dtype),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    np.zeros(tensor.data.size, dtype=tensor.dtype),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )
 
 
 def randn_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
@@ -138,15 +146,17 @@ def randn_like(tensor: BlockSparseTensor) -> BlockSparseTensor:
     BlockSparseTensor
   """
   return BlockSparseTensor(
-      _randn(tensor.data.size, dtype=tensor.dtype),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    _randn(tensor.data.size, dtype=tensor.dtype),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )
 
 
 def random_like(
-    tensor: BlockSparseTensor, boundaries: Tuple = (0, 1)) -> BlockSparseTensor:
+  tensor: BlockSparseTensor, boundaries: Tuple = (0, 1)
+) -> BlockSparseTensor:
   """
   Initialize a symmetric tensor with random uniform numbers.
   The resulting tensor has the same shape and dtype as `tensor`.
@@ -156,8 +166,9 @@ def random_like(
     BlockSparseTensor
   """
   return BlockSparseTensor(
-      _random(tensor.data.size, dtype=tensor.dtype, boundaries=boundaries),
-      charges=tensor._charges,
-      flows=tensor._flows,
-      order=tensor._order,
-      check_consistency=False)
+    _random(tensor.data.size, dtype=tensor.dtype, boundaries=boundaries),
+    charges=tensor._charges,
+    flows=tensor._flows,
+    order=tensor._order,
+    check_consistency=False,
+  )

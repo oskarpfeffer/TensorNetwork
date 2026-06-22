@@ -35,7 +35,8 @@ def test_reshape():
 def test_transpose():
   backend = tensorflow_backend.TensorFlowBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
   actual = backend.transpose(a, [2, 0, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
   np.testing.assert_allclose(expected, actual)
@@ -44,7 +45,8 @@ def test_transpose():
 def test_transpose_noperm():
   backend = tensorflow_backend.TensorFlowBackend()
   a = backend.convert_to_tensor(
-      np.array([[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]))
+    np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
+  )
   actual = backend.transpose(a)  # [2, 1, 0]
   actual = backend.transpose(actual, perm=[0, 2, 1])
   expected = np.array([[[1.0, 3.0], [5.0, 7.0]], [[2.0, 4.0], [6.0, 8.0]]])
@@ -63,9 +65,10 @@ def test_shape_concat():
 def test_slice():
   backend = tensorflow_backend.TensorFlowBackend()
   a = backend.convert_to_tensor(
-      np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]))
+    np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+  )
   actual = backend.slice(a, (1, 1), (2, 2))
-  expected = np.array([[5., 6.], [8., 9.]])
+  expected = np.array([[5.0, 6.0], [8.0, 9.0]])
   np.testing.assert_allclose(expected, actual)
 
 
@@ -94,7 +97,7 @@ def test_shape_prod():
 
 def test_sqrt():
   backend = tensorflow_backend.TensorFlowBackend()
-  a = backend.convert_to_tensor(np.array([4., 9.]))
+  a = backend.convert_to_tensor(np.array([4.0, 9.0]))
   actual = backend.sqrt(a)
   expected = np.array([2, 3])
   np.testing.assert_allclose(expected, actual)
@@ -114,8 +117,7 @@ def test_outer_product():
   a = backend.convert_to_tensor(2 * np.ones((2, 1)))
   b = backend.convert_to_tensor(np.ones((1, 2, 2)))
   actual = backend.outer_product(a, b)
-  expected = np.array([[[[[2.0, 2.0], [2.0, 2.0]]]], [[[[2.0, 2.0], [2.0,
-                                                                     2.0]]]]])
+  expected = np.array([[[[[2.0, 2.0], [2.0, 2.0]]]], [[[[2.0, 2.0], [2.0, 2.0]]]]])
   np.testing.assert_allclose(expected, actual)
 
 
@@ -123,7 +125,7 @@ def test_einsum():
   backend = tensorflow_backend.TensorFlowBackend()
   a = backend.convert_to_tensor(2 * np.ones((2, 1)))
   b = backend.convert_to_tensor(np.ones((1, 2, 2)))
-  actual = backend.einsum('ij,jil->l', a, b)
+  actual = backend.einsum("ij,jil->l", a, b)
   expected = np.array([4.0, 4.0])
   np.testing.assert_allclose(expected, actual)
 
@@ -257,11 +259,13 @@ def test_conj():
   np.testing.assert_allclose(expected, actual)
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 2),
-    pytest.param(2. * np.ones(()), 1. * np.ones((1, 2, 3)), 3. * np.ones(
-        (1, 2, 3))),
-])
+    pytest.param(2.0 * np.ones(()), 1.0 * np.ones((1, 2, 3)), 3.0 * np.ones((1, 2, 3))),
+  ],
+)
 def test_addition(a, b, expected):
   backend = tensorflow_backend.TensorFlowBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -272,10 +276,13 @@ def test_addition(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 0),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.zeros((1, 2, 3))),
-])
+  ],
+)
 def test_subtraction(a, b, expected):
   backend = tensorflow_backend.TensorFlowBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -286,10 +293,13 @@ def test_subtraction(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
     pytest.param(1, 1, 1),
     pytest.param(np.ones((1, 2, 3)), np.ones((1, 2, 3)), np.ones((1, 2, 3))),
-])
+  ],
+)
 def test_multiply(a, b, expected):
   backend = tensorflow_backend.TensorFlowBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -300,11 +310,13 @@ def test_multiply(a, b, expected):
   assert tensor1.dtype == tensor2.dtype == result.dtype
 
 
-@pytest.mark.parametrize("a, b, expected", [
-    pytest.param(2., 2., 1.),
-    pytest.param(
-        np.ones(()), 2. * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
-])
+@pytest.mark.parametrize(
+  "a, b, expected",
+  [
+    pytest.param(2.0, 2.0, 1.0),
+    pytest.param(np.ones(()), 2.0 * np.ones((1, 2, 3)), 0.5 * np.ones((1, 2, 3))),
+  ],
+)
 def test_divide(a, b, expected):
   backend = tensorflow_backend.TensorFlowBackend()
   tensor1 = backend.convert_to_tensor(a)
@@ -418,14 +430,19 @@ def test_sparse_shape():
   np.testing.assert_allclose(backend.sparse_shape(tensor), tensor.shape)
 
 
-@pytest.mark.parametrize("dtype,method", [(tf.float64, "sin"),
-                                          (tf.complex128, "sin"),
-                                          (tf.float64, "cos"),
-                                          (tf.complex128, "cos"),
-                                          (tf.float64, "exp"),
-                                          (tf.complex128, "exp"),
-                                          (tf.float64, "log"),
-                                          (tf.complex128, "log")])
+@pytest.mark.parametrize(
+  "dtype,method",
+  [
+    (tf.float64, "sin"),
+    (tf.complex128, "sin"),
+    (tf.float64, "cos"),
+    (tf.complex128, "cos"),
+    (tf.float64, "exp"),
+    (tf.complex128, "exp"),
+    (tf.float64, "log"),
+    (tf.complex128, "log"),
+  ],
+)
 def test_elementwise_ops(dtype, method):
   backend = tensorflow_backend.TensorFlowBackend()
   tensor = backend.randn((4, 2, 1), dtype=dtype, seed=10)
@@ -437,8 +454,9 @@ def test_elementwise_ops(dtype, method):
   np.testing.assert_almost_equal(tensor1.numpy(), tensor2.numpy())
 
 
-@pytest.mark.parametrize("dtype,method", [(tf.float64, "expm"),
-                                          (tf.complex128, "expm")])
+@pytest.mark.parametrize(
+  "dtype,method", [(tf.float64, "expm"), (tf.complex128, "expm")]
+)
 def test_matrix_ops(dtype, method):
   backend = tensorflow_backend.TensorFlowBackend()
   matrix = backend.randn((4, 4), dtype=dtype, seed=10)
@@ -447,8 +465,9 @@ def test_matrix_ops(dtype, method):
   np.testing.assert_almost_equal(matrix1.numpy(), matrix2.numpy())
 
 
-@pytest.mark.parametrize("dtype,method", [(tf.float64, "expm"),
-                                          (tf.complex128, "expm")])
+@pytest.mark.parametrize(
+  "dtype,method", [(tf.float64, "expm"), (tf.complex128, "expm")]
+)
 def test_matrix_ops_raises(dtype, method):
   backend = tensorflow_backend.TensorFlowBackend()
   matrix = backend.randn((4, 4, 4), dtype=dtype, seed=10)
@@ -600,6 +619,7 @@ def test_pivot(dtype, pivot_axis):
   actual = backend.pivot(tensor, pivot_axis=pivot_axis)
   np.testing.assert_allclose(expected, actual)
 
+
 @pytest.mark.parametrize("dtype", tf_dtypes)
 def test_item(dtype):
   backend = tensorflow_backend.TensorFlowBackend()
@@ -610,6 +630,7 @@ def test_item(dtype):
   tensor = backend.ones((2, 1), dtype=dtype)
   with pytest.raises(ValueError, match="expected"):
     backend.item(tensor)
+
 
 @pytest.mark.parametrize("dtype", tf_dtypes)
 def test_power(dtype):
@@ -624,7 +645,8 @@ def test_power(dtype):
   actual = backend.power(base_tensor, power)
   expected = tf.math.pow(base_tensor, power)
   np.testing.assert_allclose(expected, actual)
-  
+
+
 @pytest.mark.parametrize("dtype", tf_dtypes)
 def test_eps(dtype):
   backend = tensorflow_backend.TensorFlowBackend()

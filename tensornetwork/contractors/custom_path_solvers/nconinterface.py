@@ -14,13 +14,16 @@
 
 import numpy as np
 from typing import List, Union, Tuple, Optional
+
 # pylint: disable=line-too-long
-from tensornetwork.contractors.custom_path_solvers.pathsolvers import full_solve_complete
+from tensornetwork.contractors.custom_path_solvers.pathsolvers import (
+  full_solve_complete,
+)
 
 
-def ncon_solver(tensors: List[np.ndarray],
-                labels: List[List[int]],
-                max_branch: Optional[int] = None):
+def ncon_solver(
+  tensors: List[np.ndarray], labels: List[List[int]], max_branch: Optional[int] = None
+):
   """
   Solve for the contraction order of a tensor network (encoded in the `ncon`
   syntax) that minimizes the computational cost.
@@ -60,8 +63,7 @@ def ncon_to_adj(tensors: List[np.ndarray], labels: List[List[int]]):
   N = len(labels)
   ranks = [len(labels[i]) for i in range(N)]
   flat_labels = np.hstack([labels[i] for i in range(N)])
-  tensor_counter = np.hstack(
-      [i * np.ones(ranks[i], dtype=int) for i in range(N)])
+  tensor_counter = np.hstack([i * np.ones(ranks[i], dtype=int) for i in range(N)])
   index_counter = np.hstack([np.arange(ranks[i]) for i in range(N)])
 
   # build log-adjacency index-by-index
@@ -108,10 +110,12 @@ def ord_to_ncon(labels: List[List[int]], orders: np.ndarray):
   for i in range(N - 1):
     # find common indices between tensor pair
     cont_many, A_cont, B_cont = np.intersect1d(
-        new_labels[orders[0, i]], new_labels[orders[1, i]], return_indices=True)
+      new_labels[orders[0, i]], new_labels[orders[1, i]], return_indices=True
+    )
     temp_labels = np.append(
-        np.delete(new_labels[orders[0, i]], A_cont),
-        np.delete(new_labels[orders[1, i]], B_cont))
+      np.delete(new_labels[orders[0, i]], A_cont),
+      np.delete(new_labels[orders[1, i]], B_cont),
+    )
     con_order = list(np.concatenate((con_order, cont_many), axis=0))
 
     # build new set of labels
@@ -121,9 +125,11 @@ def ord_to_ncon(labels: List[List[int]], orders: np.ndarray):
   return con_order
 
 
-def ncon_cost_check(tensors: List[np.ndarray],
-                    labels: List[Union[List[int], Tuple[int]]],
-                    con_order: Optional[Union[List[int], str]] = None):
+def ncon_cost_check(
+  tensors: List[np.ndarray],
+  labels: List[Union[List[int], Tuple[int]]],
+  con_order: Optional[Union[List[int], str]] = None,
+):
   """
   Checks the computational cost of an `ncon` contraction (without actually
   doing the contraction). Ignore the cost contributions from partial traces
@@ -140,7 +146,7 @@ def ncon_cost_check(tensors: List[np.ndarray],
     float: the cost of the network contraction, given as log10(total_FLOPS).
   """
 
-  total_cost = np.float('-inf')
+  total_cost = np.float("-inf")
   N = len(tensors)
   tensor_dims = [np.array(np.log10(ele.shape)) for ele in tensors]
   connect_list = [np.array(ele) for ele in labels]
@@ -158,29 +164,28 @@ def ncon_cost_check(tensors: List[np.ndarray],
     tr_inds = np.isin(temp_connect, uni_inds[counts == 1])
     tensor_dims[counter] = tensor_dims[counter][tr_inds]
     connect_list[counter] = temp_connect[tr_inds]
-    con_order = con_order[np.logical_not(
-        np.isin(con_order, uni_inds[counts == 2]))]
+    con_order = con_order[np.logical_not(np.isin(con_order, uni_inds[counts == 2]))]
 
   # do all binary contractions
   while len(con_order) > 0:
     # identify tensors to be contracted
     cont_ind = con_order[0]
     locs = [
-        ele for ele in range(len(connect_list))
-        if sum(connect_list[ele] == cont_ind) > 0
+      ele for ele in range(len(connect_list)) if sum(connect_list[ele] == cont_ind) > 0
     ]
 
     # identify indices to be contracted
     c1 = connect_list.pop(locs[1])
     c0 = connect_list.pop(locs[0])
     cont_many, A_cont, B_cont = np.intersect1d(
-        c0, c1, assume_unique=True, return_indices=True)
+      c0, c1, assume_unique=True, return_indices=True
+    )
 
     # identify dimensions of contracted
     d1 = tensor_dims.pop(locs[1])
     d0 = tensor_dims.pop(locs[0])
     single_cost = np.sum(d0) + np.sum(d1) - np.sum(d0[A_cont])
-    total_cost = single_cost + np.log10(1 + 10**(total_cost - single_cost))
+    total_cost = single_cost + np.log10(1 + 10 ** (total_cost - single_cost))
 
     # update lists
     tensor_dims.append(np.append(np.delete(d0, A_cont), np.delete(d1, B_cont)))
@@ -195,6 +200,6 @@ def ncon_cost_check(tensors: List[np.ndarray],
       single_cost = tensor_sizes[0] + tensor_sizes[1]
       tensor_sizes[0] += tensor_sizes[1]
       tensor_sizes = np.sort(np.delete(tensor_sizes, 1))
-      total_cost = single_cost + np.log10(1 + 10**(total_cost - single_cost))
+      total_cost = single_cost + np.log10(1 + 10 ** (total_cost - single_cost))
 
   return total_cost

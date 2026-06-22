@@ -55,7 +55,12 @@ def test_split_node_full_svd(backend):
   a = tn.Node(val, backend=backend)
   e1 = a[0]
   e2 = a[1]
-  _, s, _, _, = tn.split_node_full_svd(a, [e1], [e2])
+  (
+    _,
+    s,
+    _,
+    _,
+  ) = tn.split_node_full_svd(a, [e1], [e2])
   tn.check_correct(tn.reachable(s))
   np.testing.assert_allclose(s.tensor, np.diag([9.1, 7.5]), rtol=1e-5)
 
@@ -65,8 +70,8 @@ def test_svd_consistency(backend):
     pytest.skip("Complex numbers currently not supported in PyTorch")
 
   original_tensor = np.array(
-      [[1.0, 2.0j, 3.0, 4.0], [5.0, 6.0 + 1.0j, 3.0j, 2.0 + 1.0j]],
-      dtype=np.complex64)
+    [[1.0, 2.0j, 3.0, 4.0], [5.0, 6.0 + 1.0j, 3.0j, 2.0 + 1.0j]], dtype=np.complex64
+  )
   node = tn.Node(original_tensor, backend=backend)
   u, vh, _ = tn.split_node(node, [node[0]], [node[1]])
   final_node = tn.contract_between(u, vh)
@@ -74,8 +79,9 @@ def test_svd_consistency(backend):
 
 
 def test_svd_consistency_symmetric_real_matrix(backend):
-  original_tensor = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 3.0, 2.0]],
-                             dtype=np.float64)
+  original_tensor = np.array(
+    [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 3.0, 2.0]], dtype=np.float64
+  )
   node = tn.Node(original_tensor, backend=backend)
   u, vh, _ = tn.split_node(node, [node[0]], [node[1]])
   final_node = tn.contract_between(u, vh)
@@ -86,20 +92,28 @@ def test_split_node_full_svd_names(backend):
   a = tn.Node(np.random.rand(10, 10), backend=backend)
   e1 = a[0]
   e2 = a[1]
-  left, s, right, _, = tn.split_node_full_svd(
-      a, [e1], [e2],
-      left_name='left',
-      middle_name='center',
-      right_name='right',
-      left_edge_name='left_edge',
-      right_edge_name='right_edge')
-  assert left.name == 'left'
-  assert s.name == 'center'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'left_edge'
-  assert s[0].name == 'left_edge'
-  assert s[1].name == 'right_edge'
-  assert right.edges[0].name == 'right_edge'
+  (
+    left,
+    s,
+    right,
+    _,
+  ) = tn.split_node_full_svd(
+    a,
+    [e1],
+    [e2],
+    left_name="left",
+    middle_name="center",
+    right_name="right",
+    left_edge_name="left_edge",
+    right_edge_name="right_edge",
+  )
+  assert left.name == "left"
+  assert s.name == "center"
+  assert right.name == "right"
+  assert left.edges[-1].name == "left_edge"
+  assert s[0].name == "left_edge"
+  assert s[1].name == "right_edge"
+  assert right.edges[0].name == "right_edge"
 
 
 def test_split_node_rq_names(backend):
@@ -111,16 +125,12 @@ def test_split_node_rq_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right = tn.split_node_rq(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_qr_names(backend):
@@ -132,16 +142,12 @@ def test_split_node_qr_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right = tn.split_node_qr(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_names(backend):
@@ -153,16 +159,12 @@ def test_split_node_names(backend):
   for i in range(3, 5):
     right_edges.append(a[i])
   left, right, _ = tn.split_node(
-      a,
-      left_edges,
-      right_edges,
-      left_name='left',
-      right_name='right',
-      edge_name='edge')
-  assert left.name == 'left'
-  assert right.name == 'right'
-  assert left.edges[-1].name == 'edge'
-  assert right.edges[0].name == 'edge'
+    a, left_edges, right_edges, left_name="left", right_name="right", edge_name="edge"
+  )
+  assert left.name == "left"
+  assert right.name == "right"
+  assert left.edges[-1].name == "edge"
+  assert right.edges[0].name == "edge"
 
 
 def test_split_node_rq(backend):

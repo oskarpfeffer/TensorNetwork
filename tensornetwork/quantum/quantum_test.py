@@ -120,8 +120,7 @@ def test_identity(backend):
   E = qu.identity((2, 2), backend=backend)
   np.testing.assert_allclose((E @ psi).eval(), psi.eval())
 
-  np.testing.assert_allclose((psi.adjoint() @ E @ psi).eval(),
-                             psi.norm().eval())
+  np.testing.assert_allclose((psi.adjoint() @ E @ psi).eval(), psi.norm().eval())
 
   op = qu.QuOperator.from_tensor(tensor, [0], [1], backend=backend)
   op_I = op.tensor_product(E)
@@ -133,7 +132,7 @@ def test_tensor_product(backend):
   psi = qu.QuVector.from_tensor(np.random.rand(2, 2), backend=backend)
   psi_psi = psi.tensor_product(psi)
   assert len(psi_psi.subsystem_edges) == 4
-  np.testing.assert_almost_equal(psi_psi.norm().eval(), psi.norm().eval()**2)
+  np.testing.assert_almost_equal(psi_psi.norm().eval(), psi.norm().eval() ** 2)
 
 
 def test_matmul(backend):
@@ -165,25 +164,24 @@ def test_mul(backend):
   np.testing.assert_allclose(res, mat * 0.5)
 
   with pytest.raises(ValueError):
-    _ = (op * op)
+    _ = op * op
 
   with pytest.raises(ValueError):
-    _ = (op * mat)
+    _ = op * mat
 
 
 def test_expectations(backend):
-  if backend == 'pytorch':
+  if backend == "pytorch":
     psi_tensor = np.random.rand(2, 2, 2)
     op_tensor = np.random.rand(2, 2)
   else:
-    psi_tensor = np.random.rand(2, 2, 2) + 1.j * np.random.rand(2, 2, 2)
-    op_tensor = np.random.rand(2, 2) + 1.j * np.random.rand(2, 2)
+    psi_tensor = np.random.rand(2, 2, 2) + 1.0j * np.random.rand(2, 2, 2)
+    op_tensor = np.random.rand(2, 2) + 1.0j * np.random.rand(2, 2)
 
   psi = qu.QuVector.from_tensor(psi_tensor, backend=backend)
   op = qu.QuOperator.from_tensor(op_tensor, [0], [1], backend=backend)
 
-  op_3 = op.tensor_product(
-      qu.identity((2, 2), backend=backend, dtype=psi_tensor.dtype))
+  op_3 = op.tensor_product(qu.identity((2, 2), backend=backend, dtype=psi_tensor.dtype))
   res1 = (psi.adjoint() @ op_3 @ psi).eval()
 
   rho_1 = psi.reduced_density([1, 2])  # trace out sites 2 and 3

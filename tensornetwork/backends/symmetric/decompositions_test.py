@@ -30,13 +30,15 @@ def test_svds(dtype, R, R1, num_charges):
   np.random.seed(10)
   D = 30
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
   flows = [True] * R
-  A = BlockSparseTensor.random([Index(charges[n], flows[n]) for n in range(R)],
-                               dtype=dtype)
+  A = BlockSparseTensor.random(
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
 
   u, s, v, _ = decompositions.svd(bs, A, R1)
   u_dense, s_dense, v_dense, _ = np_decompositions.svd(np, A.todense(), R1)
@@ -52,17 +54,20 @@ def test_singular_values(dtype, R, R1, num_charges):
   np.random.seed(10)
   D = 30
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
   flows = [True] * R
-  A = BlockSparseTensor.random([Index(charges[n], flows[n]) for n in range(R)],
-                               dtype=dtype)
+  A = BlockSparseTensor.random(
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
   _, s, _, _ = decompositions.svd(bs, A, R1)
   _, s_dense, _, _ = np_decompositions.svd(np, A.todense(), R1)
   np.testing.assert_almost_equal(
-      np.sort(s.todense()), np.sort(s_dense[s_dense > 1E-13]))
+    np.sort(s.todense()), np.sort(s_dense[s_dense > 1e-13])
+  )
 
 
 @pytest.mark.parametrize("dtype", np_dtypes)
@@ -73,15 +78,16 @@ def test_max_singular_values(dtype, R, R1, num_charges):
   D = 30
   max_singular_values = 12
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
   flows = [True] * R
-  A = BlockSparseTensor.random([Index(charges[n], flows[n]) for n in range(R)],
-                               dtype=dtype)
-  _, s, _, _ = decompositions.svd(
-      bs, A, R1, max_singular_values=max_singular_values)
+  A = BlockSparseTensor.random(
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
+  _, s, _, _ = decompositions.svd(bs, A, R1, max_singular_values=max_singular_values)
   assert len(s.data) <= max_singular_values
 
 
@@ -93,14 +99,16 @@ def test_max_truncation_error(dtype, num_charges, seed):
   R = 2
   D = 30
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
 
   flows = [True] * R
   random_matrix = BlockSparseTensor.random(
-      [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype)
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
 
   U, S, V = bs.svd(random_matrix, full_matrices=False)
   svals = np.array(range(1, len(S.data) + 1)).astype(np.float64)
@@ -108,8 +116,7 @@ def test_max_truncation_error(dtype, num_charges, seed):
   val = U @ bs.diag(S) @ V
   trunc = 8
   mask = np.sqrt(np.cumsum(np.square(svals))) >= trunc
-  _, S2, _, _ = decompositions.svd(
-      bs, val, 1, max_truncation_error=trunc)
+  _, S2, _, _ = decompositions.svd(bs, val, 1, max_truncation_error=trunc)
   np.testing.assert_allclose(S2.data, svals[mask][::-1])
 
 
@@ -120,19 +127,20 @@ def test_max_singular_values_larger_than_bond_dimension(dtype, num_charges):
   R = 2
   D = 30
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
 
   flows = [True] * R
   random_matrix = BlockSparseTensor.random(
-      [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype)
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
   U, S, V = bs.svd(random_matrix, full_matrices=False)
   S.data = np.array(range(len(S.data)))
   val = U @ bs.diag(S) @ V
-  _, S2, _, _ = decompositions.svd(
-      bs, val, 1, max_singular_values=40)
+  _, S2, _, _ = decompositions.svd(bs, val, 1, max_singular_values=40)
   assert S2.shape == S.shape
 
 
@@ -143,14 +151,16 @@ def test_rq(dtype, R, R1, num_charges):
   np.random.seed(10)
   D = 30
   charges = [
-      BaseCharge(
-          np.random.randint(-5, 6, (D, num_charges)),
-          charge_types=[U1Charge] * num_charges) for n in range(R)
+    BaseCharge(
+      np.random.randint(-5, 6, (D, num_charges)), charge_types=[U1Charge] * num_charges
+    )
+    for n in range(R)
   ]
 
   flows = [True] * R
-  A = BlockSparseTensor.random([Index(charges[n], flows[n]) for n in range(R)],
-                               dtype=dtype)
+  A = BlockSparseTensor.random(
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
 
   r, q = decompositions.rq(bs, A, R1)
   res = bs.tensordot(r, q, 1)
@@ -164,12 +174,11 @@ def test_rq(dtype, R, R1, num_charges):
 def test_qr(dtype, R, R1):
   np.random.seed(10)
   D = 30
-  charges = [
-      U1Charge.random(dimension=D, minval=-5, maxval=5) for n in range(R)
-  ]
+  charges = [U1Charge.random(dimension=D, minval=-5, maxval=5) for n in range(R)]
   flows = [True] * R
-  A = BlockSparseTensor.random([Index(charges[n], flows[n]) for n in range(R)],
-                               dtype=dtype)
+  A = BlockSparseTensor.random(
+    [Index(charges[n], flows[n]) for n in range(R)], dtype=dtype
+  )
 
   q, r = decompositions.qr(bs, A, R1)
   res = bs.tensordot(q, r, 1)

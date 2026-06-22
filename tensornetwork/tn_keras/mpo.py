@@ -11,7 +11,7 @@ import math
 
 
 # pytype: disable=module-attr
-@tf.keras.utils.register_keras_serializable(package='tensornetwork')# pylint: disable=no-member
+@tf.keras.utils.register_keras_serializable(package="tensornetwork")  # pylint: disable=no-member
 # pytype: enable=module-attr
 class DenseMPO(Layer):
   """Matrix Product Operator (MPO) TN layer.
@@ -54,22 +54,24 @@ class DenseMPO(Layer):
     N-D tensor with shape: `(batch_size, ..., output_dim)`.
   """
 
-  def __init__(self,
-               output_dim: int,
-               num_nodes: int,
-               bond_dim: int,
-               use_bias: Optional[bool] = True,
-               activation: Optional[Text] = None,
-               kernel_initializer: Optional[Text] = 'glorot_uniform',
-               bias_initializer: Optional[Text] = 'zeros',
-               **kwargs) -> None:
+  def __init__(
+    self,
+    output_dim: int,
+    num_nodes: int,
+    bond_dim: int,
+    use_bias: Optional[bool] = True,
+    activation: Optional[Text] = None,
+    kernel_initializer: Optional[Text] = "glorot_uniform",
+    bias_initializer: Optional[Text] = "zeros",
+    **kwargs,
+  ) -> None:
 
     # Allow specification of input_dim instead of input_shape,
     # for compatability with Keras layers that support this
-    if 'input_shape' not in kwargs and 'input_dim' in kwargs:
-      kwargs['input_shape'] = (kwargs.pop('input_dim'),)
+    if "input_shape" not in kwargs and "input_dim" in kwargs:
+      kwargs["input_shape"] = (kwargs.pop("input_dim"),)
 
-    assert num_nodes > 2, 'Need at least 3 nodes to create MPO.'
+    assert num_nodes > 2, "Need at least 3 nodes to create MPO."
 
     super().__init__(**kwargs)
 
@@ -86,69 +88,90 @@ class DenseMPO(Layer):
     # Disable the attribute-defined-outside-init violations in this function
     # pylint: disable=attribute-defined-outside-init
     if input_shape[-1] is None:
-      raise ValueError('The last dimension of the inputs to `Dense` '
-                       'should be defined. Found `None`.')
+      raise ValueError(
+        "The last dimension of the inputs to `Dense` should be defined. Found `None`."
+      )
     # Try to convert n to an integer. tensorflow.compat.v1 uses a partially
     # integer compatible interface that does not implement the __pow__
     # function. __int__ is implemented, so calling this first is necessary.
     input_dim = int(input_shape[-1])
 
     def is_perfect_root(n, n_nodes):
-      root = n**(1. / n_nodes)
-      return round(root)**n_nodes == n
+      root = n ** (1.0 / n_nodes)
+      return round(root) ** n_nodes == n
 
     # Ensure the MPO dimensions will work
-    assert is_perfect_root(input_dim, self.num_nodes), \
-      f'Input dim incorrect.\
-      {input_dim}**(1. / {self.num_nodes}) must be round.'
+    assert is_perfect_root(input_dim, self.num_nodes), (
+      f"Input dim incorrect.\
+      {input_dim}**(1. / {self.num_nodes}) must be round."
+    )
 
-    assert is_perfect_root(self.output_dim, self.num_nodes), \
-      f'Output dim incorrect. \
-      {self.output_dim}**(1. / {self.num_nodes}) must be round.'
+    assert is_perfect_root(self.output_dim, self.num_nodes), (
+      f"Output dim incorrect. \
+      {self.output_dim}**(1. / {self.num_nodes}) must be round."
+    )
 
     super().build(input_shape)
 
-    self.in_leg_dim = math.ceil(input_dim**(1. / self.num_nodes))
-    self.out_leg_dim = math.ceil(self.output_dim**(1. / self.num_nodes))
+    self.in_leg_dim = math.ceil(input_dim ** (1.0 / self.num_nodes))
+    self.out_leg_dim = math.ceil(self.output_dim ** (1.0 / self.num_nodes))
 
     self.nodes.append(
-        self.add_weight(name='end_node_first',
-                        shape=(self.in_leg_dim, self.bond_dim,
-                               self.out_leg_dim),
-                        trainable=True,
-                        initializer=self.kernel_initializer))
+      self.add_weight(
+        name="end_node_first",
+        shape=(self.in_leg_dim, self.bond_dim, self.out_leg_dim),
+        trainable=True,
+        initializer=self.kernel_initializer,
+      )
+    )
     for i in range(self.num_nodes - 2):
       self.nodes.append(
-          self.add_weight(name=f'middle_node_{i}',
-                          shape=(self.in_leg_dim, self.bond_dim, self.bond_dim,
-                                 self.out_leg_dim),
-                          trainable=True,
-                          initializer=self.kernel_initializer))
+        self.add_weight(
+          name=f"middle_node_{i}",
+          shape=(self.in_leg_dim, self.bond_dim, self.bond_dim, self.out_leg_dim),
+          trainable=True,
+          initializer=self.kernel_initializer,
+        )
+      )
     self.nodes.append(
-        self.add_weight(name='end_node_last',
-                        shape=(self.in_leg_dim, self.bond_dim,
-                               self.out_leg_dim),
-                        trainable=True,
-                        initializer=self.kernel_initializer))
+      self.add_weight(
+        name="end_node_last",
+        shape=(self.in_leg_dim, self.bond_dim, self.out_leg_dim),
+        trainable=True,
+        initializer=self.kernel_initializer,
+      )
+    )
 
-    self.bias_var = self.add_weight(
-        name='bias',
+    self.bias_var = (
+      self.add_weight(
+        name="bias",
         shape=(self.output_dim,),
         trainable=True,
-        initializer=self.bias_initializer) if self.use_bias else None
+        initializer=self.bias_initializer,
+      )
+      if self.use_bias
+      else None
+    )
 
   def call(self, inputs: tf.Tensor, **kwargs) -> tf.Tensor:  # pylint: disable=unused-argument, arguments-differ
 
-    def f(x: tf.Tensor, nodes: List[Node], num_nodes: int, in_leg_dim: int,
-          output_dim: int, use_bias: bool, bias_var: tf.Tensor) -> tf.Tensor:
+    def f(
+      x: tf.Tensor,
+      nodes: List[Node],
+      num_nodes: int,
+      in_leg_dim: int,
+      output_dim: int,
+      use_bias: bool,
+      bias_var: tf.Tensor,
+    ) -> tf.Tensor:
 
       l = [in_leg_dim] * num_nodes
       input_reshaped = tf.reshape(x, tuple(l))
-      x_node = tn.Node(input_reshaped, name='xnode', backend="tensorflow")
+      x_node = tn.Node(input_reshaped, name="xnode", backend="tensorflow")
 
       tn_nodes = []
       for i, v in enumerate(nodes):
-        tn_nodes.append(tn.Node(v, name=f'node_{i}', backend="tensorflow"))
+        tn_nodes.append(tn.Node(v, name=f"node_{i}", backend="tensorflow"))
         # Connect every node to input node
         x_node[i] ^ tn_nodes[i][0]
 
@@ -178,11 +201,27 @@ class DenseMPO(Layer):
     input_shape = list(inputs.shape)
     inputs = tf.reshape(inputs, (-1, input_shape[-1]))
     result = tf.vectorized_map(
-        lambda vec: f(vec, self.nodes, self.num_nodes, self.in_leg_dim, self.
-                      output_dim, self.use_bias, self.bias_var), inputs)
+      lambda vec: f(
+        vec,
+        self.nodes,
+        self.num_nodes,
+        self.in_leg_dim,
+        self.output_dim,
+        self.use_bias,
+        self.bias_var,
+      ),
+      inputs,
+    )
     if self.activation is not None:
       result = self.activation(result)
-    result = tf.reshape(result, [-1] + input_shape[1:-1] + [self.output_dim,])
+    result = tf.reshape(
+      result,
+      [-1]
+      + input_shape[1:-1]
+      + [
+        self.output_dim,
+      ],
+    )
     return result
 
   def compute_output_shape(self, input_shape: List[int]) -> Tuple[int, int]:
@@ -200,18 +239,17 @@ class DenseMPO(Layer):
     config = {}
 
     # Include the MPO-specific arguments
-    args = ['output_dim', 'num_nodes', 'bond_dim', 'use_bias']
+    args = ["output_dim", "num_nodes", "bond_dim", "use_bias"]
     for arg in args:
       config[arg] = getattr(self, arg)
 
     # Serialize the activation
-    config['activation'] = activations.serialize(getattr(self, 'activation'))
+    config["activation"] = activations.serialize(getattr(self, "activation"))
 
     # Serialize the initializers
-    custom_initializers = ['kernel_initializer', 'bias_initializer']
+    custom_initializers = ["kernel_initializer", "bias_initializer"]
     for initializer_arg in custom_initializers:
-      config[initializer_arg] = initializers.serialize(
-          getattr(self, initializer_arg))
+      config[initializer_arg] = initializers.serialize(getattr(self, initializer_arg))
 
     # Get base config
     base_config = super().get_config()

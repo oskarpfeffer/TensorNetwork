@@ -18,8 +18,13 @@ from typing import Optional, Sequence, Tuple, Any, Union, Type, Callable, List
 from typing import Text
 import numpy as np
 from tensornetwork.backends import abstract_backend
-#pylint: disable=line-too-long
-from tensornetwork.network_components import AbstractNode, Node, outer_product_final_nodes
+
+# pylint: disable=line-too-long
+from tensornetwork.network_components import (
+  AbstractNode,
+  Node,
+  outer_product_final_nodes,
+)
 from tensornetwork import backend_contextmanager
 from tensornetwork import backends
 from tensornetwork import network_components
@@ -29,12 +34,14 @@ BaseBackend = abstract_backend.AbstractBackend
 
 
 # INITIALIZATION
-def initialize_node(fname: Text,
-                    *fargs: Any,
-                    name: Optional[Text] = None,
-                    axis_names: Optional[List[Text]] = None,
-                    backend: Optional[Union[Text, BaseBackend]] = None,
-                    **fkwargs: Any) -> Tensor:
+def initialize_node(
+  fname: Text,
+  *fargs: Any,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+  **fkwargs: Any,
+) -> Tensor:
   """Return a Node wrapping data obtained by an initialization function
   implemented in a backend. The Node will have the same shape as the
   underlying array that function generates, with all Edges dangling.
@@ -64,12 +71,14 @@ def initialize_node(fname: Text,
   return node
 
 
-def eye(N: int,
-        dtype: Optional[Type[np.number]] = None,
-        M: Optional[int] = None,
-        name: Optional[Text] = None,
-        axis_names: Optional[List[Text]] = None,
-        backend: Optional[Union[Text, BaseBackend]] = None) -> Tensor:
+def eye(
+  N: int,
+  dtype: Optional[Type[np.number]] = None,
+  M: Optional[int] = None,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+) -> Tensor:
   """Return a Node representing a 2D array with ones on the diagonal and
   zeros elsewhere. The Node has two dangling Edges.
   Args:
@@ -86,21 +95,18 @@ def eye(N: int,
         ones.
   """
   the_node = initialize_node(
-      "eye",
-      N,
-      name=name,
-      axis_names=axis_names,
-      backend=backend,
-      dtype=dtype,
-      M=M)
+    "eye", N, name=name, axis_names=axis_names, backend=backend, dtype=dtype, M=M
+  )
   return the_node
 
 
-def zeros(shape: Sequence[int],
-          dtype: Optional[Type[np.number]] = None,
-          name: Optional[Text] = None,
-          axis_names: Optional[List[Text]] = None,
-          backend: Optional[Union[Text, BaseBackend]] = None) -> Tensor:
+def zeros(
+  shape: Sequence[int],
+  dtype: Optional[Type[np.number]] = None,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+) -> Tensor:
   """Return a Node of shape `shape` of all zeros.
   The Node has one dangling Edge per dimension.
   Args:
@@ -113,20 +119,18 @@ def zeros(shape: Sequence[int],
     the_node : Node of shape `shape`. Represents an array of all zeros.
   """
   the_node = initialize_node(
-      "zeros",
-      shape,
-      name=name,
-      axis_names=axis_names,
-      backend=backend,
-      dtype=dtype)
+    "zeros", shape, name=name, axis_names=axis_names, backend=backend, dtype=dtype
+  )
   return the_node
 
 
-def ones(shape: Sequence[int],
-         dtype: Optional[Type[np.number]] = None,
-         name: Optional[Text] = None,
-         axis_names: Optional[List[Text]] = None,
-         backend: Optional[Union[Text, BaseBackend]] = None) -> Tensor:
+def ones(
+  shape: Sequence[int],
+  dtype: Optional[Type[np.number]] = None,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+) -> Tensor:
   """Return a Node of shape `shape` of all ones.
   The Node has one dangling Edge per dimension.
   Args:
@@ -140,21 +144,19 @@ def ones(shape: Sequence[int],
         Represents an array of all ones.
   """
   the_node = initialize_node(
-      "ones",
-      shape,
-      name=name,
-      axis_names=axis_names,
-      backend=backend,
-      dtype=dtype)
+    "ones", shape, name=name, axis_names=axis_names, backend=backend, dtype=dtype
+  )
   return the_node
 
 
-def randn(shape: Sequence[int],
-          dtype: Optional[Type[np.number]] = None,
-          seed: Optional[int] = None,
-          name: Optional[Text] = None,
-          axis_names: Optional[List[Text]] = None,
-          backend: Optional[Union[Text, BaseBackend]] = None) -> Tensor:
+def randn(
+  shape: Sequence[int],
+  dtype: Optional[Type[np.number]] = None,
+  seed: Optional[int] = None,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+) -> Tensor:
   """Return a Node of shape `shape` of Gaussian random floats.
   The Node has one dangling Edge per dimension.
   Args:
@@ -168,24 +170,26 @@ def randn(shape: Sequence[int],
     the_node : Node of shape `shape` filled with Gaussian random data.
   """
   the_node = initialize_node(
-      "randn",
-      shape,
-      name=name,
-      axis_names=axis_names,
-      backend=backend,
-      seed=seed,
-      dtype=dtype)
+    "randn",
+    shape,
+    name=name,
+    axis_names=axis_names,
+    backend=backend,
+    seed=seed,
+    dtype=dtype,
+  )
   return the_node
 
 
 def random_uniform(
-    shape: Sequence[int],
-    dtype: Optional[Type[np.number]] = None,
-    seed: Optional[int] = None,
-    boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
-    name: Optional[Text] = None,
-    axis_names: Optional[List[Text]] = None,
-    backend: Optional[Union[Text, BaseBackend]] = None) -> Tensor:
+  shape: Sequence[int],
+  dtype: Optional[Type[np.number]] = None,
+  seed: Optional[int] = None,
+  boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+  backend: Optional[Union[Text, BaseBackend]] = None,
+) -> Tensor:
   """Return a Node of shape `shape` of uniform random floats.
   The Node has one dangling Edge per dimension.
   Args:
@@ -200,14 +204,15 @@ def random_uniform(
     the_node : Node of shape `shape` filled with uniform random data.
   """
   the_node = initialize_node(
-      "random_uniform",
-      shape,
-      name=name,
-      axis_names=axis_names,
-      backend=backend,
-      seed=seed,
-      boundaries=boundaries,
-      dtype=dtype)
+    "random_uniform",
+    shape,
+    name=name,
+    axis_names=axis_names,
+    backend=backend,
+    seed=seed,
+    boundaries=boundaries,
+    dtype=dtype,
+  )
   return the_node
 
 
@@ -223,15 +228,16 @@ def norm(node: AbstractNode) -> Tensor:
   Raises:
     AttributeError: If `node` has no `backend` attribute.
   """
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
   return node.backend.norm(node.tensor)
 
 
-def conj(node: AbstractNode,
-         name: Optional[Text] = None,
-         axis_names: Optional[List[Text]] = None) -> AbstractNode:
+def conj(
+  node: AbstractNode,
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+) -> AbstractNode:
   """Conjugate a `node`.
 
   Args:
@@ -245,24 +251,23 @@ def conj(node: AbstractNode,
   Raises:
     AttributeError: If `node` has no `backend` attribute.
   """
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
   backend = node.backend
   if not axis_names:
     axis_names = node.axis_names
 
   return Node(
-      backend.conj(node.tensor),
-      name=name,
-      axis_names=axis_names,
-      backend=backend)
+    backend.conj(node.tensor), name=name, axis_names=axis_names, backend=backend
+  )
 
 
-def transpose(node: AbstractNode,
-              permutation: Sequence[Union[Text, int]],
-              name: Optional[Text] = None,
-              axis_names: Optional[List[Text]] = None) -> AbstractNode:
+def transpose(
+  node: AbstractNode,
+  permutation: Sequence[Union[Text, int]],
+  name: Optional[Text] = None,
+  axis_names: Optional[List[Text]] = None,
+) -> AbstractNode:
   """Transpose `node`
 
   Args:
@@ -281,16 +286,16 @@ def transpose(node: AbstractNode,
       if you try to permute with a trace edge.
   """
 
-  if not hasattr(node, 'backend'):
-    raise AttributeError('Node {} of type {} has no `backend`'.format(
-        node, type(node)))
+  if not hasattr(node, "backend"):
+    raise AttributeError("Node {} of type {} has no `backend`".format(node, type(node)))
 
   perm = [node.get_axis_number(p) for p in permutation]
   if not axis_names:
     axis_names = node.axis_names
 
   new_node = Node(
-      node.tensor, name=name, axis_names=node.axis_names, backend=node.backend)
+    node.tensor, name=name, axis_names=node.axis_names, backend=node.backend
+  )
   return new_node.reorder_axes(perm)
 
 
@@ -302,12 +307,12 @@ def kron(nodes: Sequence[AbstractNode]) -> AbstractNode:
   appear first half of edges in the resulting node, and the second half ot the
   edges in each node will be in the second half of the resulting node.
 
-  For example, if I had two nodes  :math:`X_{ab}`,  :math:`Y_{cdef}`, and 
-  :math:`Z_{gh}`, then the resulting node would have the edges ordered 
+  For example, if I had two nodes  :math:`X_{ab}`,  :math:`Y_{cdef}`, and
+  :math:`Z_{gh}`, then the resulting node would have the edges ordered
   :math:`R_{acdgbefh}`.
-   
+
   The kronecker product is designed such that the kron of many operators is
-  itself an operator. 
+  itself an operator.
 
   Args:
     nodes: A sequence of `AbstractNode` objects.
@@ -323,9 +328,10 @@ def kron(nodes: Sequence[AbstractNode]) -> AbstractNode:
   for node in nodes:
     order = len(node.shape)
     if order % 2 != 0:
-      raise ValueError(f"All operator tensors must have an even order. "
-                       f"Found tensor with order {order}")
-    input_edges += node.edges[:order // 2]
-    output_edges += node.edges[order // 2:]
+      raise ValueError(
+        f"All operator tensors must have an even order. Found tensor with order {order}"
+      )
+    input_edges += node.edges[: order // 2]
+    output_edges += node.edges[order // 2 :]
   result = outer_product_final_nodes(nodes, input_edges + output_edges)
   return result

@@ -22,10 +22,11 @@ from tensornetwork import backends, backend_contextmanager
 
 BaseBackend = abstract_backend.AbstractBackend
 
-class Tensor():
-  def __init__(self,
-               array: Any,
-               backend: Optional[Union[Text, BaseBackend]] = None) -> None:
+
+class Tensor:
+  def __init__(
+    self, array: Any, backend: Optional[Union[Text, BaseBackend]] = None
+  ) -> None:
     if backend is None:
       backend = backend_contextmanager.get_default_backend()
     backend_obj = backends.backend_factory.get_backend(backend)
@@ -36,14 +37,13 @@ class Tensor():
     self.ndim = len(self.shape)
 
   @property
-  def dtype(self) -> Any: # To maintain backend independence
-    """ Returns: The dtype of the backend array.
-    """
+  def dtype(self) -> Any:  # To maintain backend independence
+    """Returns: The dtype of the backend array."""
     return self.array.dtype
 
   @property
   def T(self) -> "Tensor":
-    """ The `Tensor` with reversed axes.
+    """The `Tensor` with reversed axes.
     Returns:
       The transposed `Tensor`.
     """
@@ -51,26 +51,22 @@ class Tensor():
 
   @property
   def H(self) -> "Tensor":
-    """ The conjugate `Tensor` with reversed axes.
-    """
+    """The conjugate `Tensor` with reversed axes."""
     star = self.backend.conj(self.array)
     array_H = self.backend.transpose(star)
     return Tensor(array_H, backend=self.backend)
 
   def conj(self) -> "Tensor":
-    """ Returns: The complex-conjugated `Tensor`.
-    """
+    """Returns: The complex-conjugated `Tensor`."""
     star = self.backend.conj(self.array)
     return Tensor(star, backend=self.backend)
 
   def conjugate(self) -> "Tensor":
-    """ Returns: The complex-conjugated `Tensor`.
-    """
+    """Returns: The complex-conjugated `Tensor`."""
     return self.conj()
 
   def copy(self) -> "Tensor":
-    """ Returns: A copy of the `Tensor`.
-    """
+    """Returns: A copy of the `Tensor`."""
     return copy.deepcopy(self)
 
   def flatten(self):
@@ -80,14 +76,18 @@ class Tensor():
     wheras ravel returns a view when possible.
     """
     size = self.size
-    flat = self.reshape([size,]).copy()
+    flat = self.reshape(
+      [
+        size,
+      ]
+    ).copy()
     return flat
 
   def hconj(self, perm: Optional[Sequence[int]] = None) -> "Tensor":
-    """ The Hermitian conjugated tensor; e.g. the complex conjugate tranposed
+    """The Hermitian conjugated tensor; e.g. the complex conjugate tranposed
     by the permutation set be `axes`. By default the axes are reversed.
     Args:
-      perm: The permutation. If None (default) the index order is reversed.  
+      perm: The permutation. If None (default) the index order is reversed.
     Returns:
       The Hermitian conjugated `Tensor`.
     """
@@ -99,7 +99,11 @@ class Tensor():
     dimension.
     """
     size = self.size
-    flat = self.reshape(shape=[size,])
+    flat = self.reshape(
+      shape=[
+        size,
+      ]
+    )
     return flat
 
   def reshape(self, shape: Sequence[int]) -> "Tensor":
@@ -113,14 +117,13 @@ class Tensor():
     return Tensor(reshaped, backend=self.backend)
 
   def squeeze(self):
-    """Return a new `Tensor` with all axes of size 1 eliminated.
-    """
+    """Return a new `Tensor` with all axes of size 1 eliminated."""
     shape = self.shape
     squeezed_shape = [d for d in shape if d != 1]
     return self.reshape(squeezed_shape)
 
   def transpose(self, perm: Optional[Sequence[int]] = None) -> "Tensor":
-    """ Return a new `Tensor` transposed according to the permutation set
+    """Return a new `Tensor` transposed according to the permutation set
     by `axes`. By default the axes are reversed.
     Args:
       axes: The permutation. If None (default) the index order is reversed.
@@ -133,8 +136,10 @@ class Tensor():
   def __mul__(self, other: Union["Tensor", float]) -> "Tensor":
     if isinstance(other, Tensor):
       if self.backend.name != other.backend.name:
-        errstr = (f"Given backens are inconsistent. Found '{self.backend.name}'"
-                  f"and '{other.backend.name}'")
+        errstr = (
+          f"Given backens are inconsistent. Found '{self.backend.name}'"
+          f"and '{other.backend.name}'"
+        )
         raise ValueError(errstr)
       other = other.array
     array = self.backend.multiply(self.array, other)
@@ -145,8 +150,10 @@ class Tensor():
   def __truediv__(self, other: Union["Tensor", float]) -> "Tensor":
     if isinstance(other, Tensor):
       if self.backend.name != other.backend.name:
-        errstr = (f"Given backens are inconsistent. Found '{self.backend.name}'"
-                  f"and '{other.backend.name}'")
+        errstr = (
+          f"Given backens are inconsistent. Found '{self.backend.name}'"
+          f"and '{other.backend.name}'"
+        )
         raise ValueError(errstr)
       other = other.array
     array = self.backend.divide(self.array, other)
@@ -155,8 +162,10 @@ class Tensor():
   def __sub__(self, other: Union["Tensor", float]) -> "Tensor":
     if isinstance(other, Tensor):
       if self.backend.name != other.backend.name:
-        errstr = (f"Given backens are inconsistent. Found '{self.backend.name}'"
-                  f"and '{other.backend.name}'")
+        errstr = (
+          f"Given backens are inconsistent. Found '{self.backend.name}'"
+          f"and '{other.backend.name}'"
+        )
         raise ValueError(errstr)
       other = other.array
     array = self.backend.subtraction(self.array, other)
@@ -169,8 +178,10 @@ class Tensor():
   def __add__(self, other: Union["Tensor", float]) -> "Tensor":
     if isinstance(other, Tensor):
       if self.backend.name != other.backend.name:
-        errstr = (f"Given backens are inconsistent. Found '{self.backend.name}'"
-                  f"and '{other.backend.name}'")
+        errstr = (
+          f"Given backens are inconsistent. Found '{self.backend.name}'"
+          f"and '{other.backend.name}'"
+        )
         raise ValueError(errstr)
       other = other.array
     array = self.backend.addition(self.array, other)
@@ -180,23 +191,20 @@ class Tensor():
 
   def __matmul__(self, other: "Tensor") -> "Tensor":
     if self.backend.name != other.backend.name:
-      errstr = (f"Backends {self.backend.name} and {other.backend.name} did"
-                f"not agree.")
+      errstr = f"Backends {self.backend.name} and {other.backend.name} didnot agree."
       raise ValueError(errstr)
     array = self.backend.matmul(self.array, other.array)
     return Tensor(array, backend=self.backend)
 
   def __call__(self, *args):
-    return NconBuilder([self], [list(args)]) 
+    return NconBuilder([self], [list(args)])
 
 
-class NconBuilder():
+class NconBuilder:
   def __init__(self, tensors, axes):
-    self.tensors = tensors[:] # Forces a copy.
+    self.tensors = tensors[:]  # Forces a copy.
     self.axes = axes[:]
 
   def __matmul__(self, other: "NconBuilder") -> "NconBuilder":
     assert isinstance(other, NconBuilder)
-    return NconBuilder(
-        self.tensors + other.tensors,
-        self.axes + other.axes)
+    return NconBuilder(self.tensors + other.tensors, self.axes + other.axes)

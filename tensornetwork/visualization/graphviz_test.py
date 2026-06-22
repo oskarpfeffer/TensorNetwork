@@ -24,5 +24,5 @@ def test_sanity_check():
   b = Node(np.eye(2), backend="tensorflow")
   connect(a[0], b[0])
   g = to_graphviz([a, b])
-  #pylint: disable=no-member
+  # pylint: disable=no-member
   assert isinstance(g, graphviz.Graph)

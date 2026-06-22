@@ -26,14 +26,14 @@ from tensornetwork import backends, backend_contextmanager
 from tensornetwork.tests import testing_utils
 from tensornetwork import ncon_interface
 
-#pylint: disable=no-member
+# pylint: disable=no-member
 config.update("jax_enable_x64", True)
 BaseBackend = abstract_backend.AbstractBackend
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_init_tensor_from_numpy_array(backend, dtype):
-  """ Creates a numpy array, initializes a Tensor from it, and checks that all
+  """Creates a numpy array, initializes a Tensor from it, and checks that all
   its members have been correctly initialized.
   """
   A, init = testing_utils.safe_zeros((2, 3, 1), backend, dtype)
@@ -48,7 +48,7 @@ def test_init_tensor_from_numpy_array(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.torch_supported_dtypes)
 def test_init_tensor_default_backend(dtype):
-  """ Creates a numpy array, initializes a Tensor from it, and checks that all
+  """Creates a numpy array, initializes a Tensor from it, and checks that all
   its members have been correctly initialized.
   """
   backend = backend_contextmanager.get_default_backend()
@@ -100,8 +100,7 @@ def test_init_tensor_from_backend_array(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_dtype(backend, dtype):
-  """ Checks that Tensor.dtype works.
-  """
+  """Checks that Tensor.dtype works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_zeros(shape, backend, dtype)
   if A is None:
@@ -114,8 +113,7 @@ def test_tensor_dtype(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_T(backend, dtype):
-  """ Checks that Tensor.T works.
-  """
+  """Checks that Tensor.T works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -124,8 +122,7 @@ def test_tensor_T(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_bool)
 def test_tensor_H(backend, dtype):
-  """ Checks that Tensor.H works.
-  """
+  """Checks that Tensor.H works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -134,8 +131,7 @@ def test_tensor_H(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_bool)
 def test_tensor_conj(backend, dtype):
-  """ Checks that Tensor.conj() works.
-  """
+  """Checks that Tensor.conj() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -144,8 +140,7 @@ def test_tensor_conj(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_bool)
 def test_tensor_conjugate(backend, dtype):
-  """ Checks that Tensor.conjugate() works.
-  """
+  """Checks that Tensor.conjugate() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -154,8 +149,7 @@ def test_tensor_conjugate(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_copy(backend, dtype):
-  """ Checks that Tensor.copy() works.
-  """
+  """Checks that Tensor.copy() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -164,20 +158,17 @@ def test_tensor_copy(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_reshape(backend, dtype):
-  """ Checks that Tensor.copy() works.
-  """
+  """Checks that Tensor.copy() works."""
   shape = (2, 3, 1)
   newshape = (6, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
-    np.testing.assert_allclose(A.reshape(newshape).array,
-                               init.reshape(newshape))
+    np.testing.assert_allclose(A.reshape(newshape).array, init.reshape(newshape))
 
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_transpose(backend, dtype):
-  """ Checks that Tensor.transpose() works.
-  """
+  """Checks that Tensor.transpose() works."""
   shape = (2, 3, 1)
   permutation = (1, 2, 0)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
@@ -189,8 +180,7 @@ def test_tensor_transpose(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_squeeze(backend, dtype):
-  """ Checks that Tensor.squeeze() works.
-  """
+  """Checks that Tensor.squeeze() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -199,8 +189,7 @@ def test_tensor_squeeze(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_ravel(backend, dtype):
-  """ Checks that Tensor.ravel() works.
-  """
+  """Checks that Tensor.ravel() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -209,8 +198,7 @@ def test_tensor_ravel(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_all_dtypes)
 def test_tensor_flatten(backend, dtype):
-  """ Checks that Tensor.flatten() works.
-  """
+  """Checks that Tensor.flatten() works."""
   shape = (2, 3, 1)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
   if A is not None:
@@ -219,8 +207,7 @@ def test_tensor_flatten(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_not_bool)
 def test_tensor_hconj(backend, dtype):
-  """ Checks that Tensor.hconj() works.
-  """
+  """Checks that Tensor.hconj() works."""
   shape = (2, 3, 1)
   permutation = (1, 2, 0)
   A, init = testing_utils.safe_randn(shape, backend, dtype)
@@ -232,8 +219,7 @@ def test_tensor_hconj(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_multiply(backend, dtype):
-  """ Checks that Tensor*Tensor works.
-  """
+  """Checks that Tensor*Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
   B, initB = testing_utils.safe_randn(shape, backend, dtype)
@@ -247,11 +233,10 @@ def test_tensor_multiply(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_multiply(backend, dtype):
-  """ Checks that Tensor*scalar works.
-  """
+  """Checks that Tensor*scalar works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = A * B
@@ -261,21 +246,20 @@ def test_tensor_scalar_multiply(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_rmultiply(backend, dtype):
-  """ Checks that scalar*Tensor works.
-  """
+  """Checks that scalar*Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = B * A
     result2 = A.backend.multiply(B, testA)
     np.testing.assert_allclose(result.array, result2)
 
+
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_divide(backend, dtype):
-  """ Checks that Tensor/Tensor works.
-  """
+  """Checks that Tensor/Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
   B, _ = testing_utils.safe_zeros(shape, backend, dtype)
@@ -289,11 +273,10 @@ def test_tensor_divide(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_divide(backend, dtype):
-  """ Checks that Tensor/scalar works.
-  """
+  """Checks that Tensor/scalar works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = A / B
@@ -303,8 +286,7 @@ def test_tensor_scalar_divide(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_addition(backend, dtype):
-  """ Checks that Tensor+Tensor works.
-  """
+  """Checks that Tensor+Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
   B, initB = testing_utils.safe_randn(shape, backend, dtype)
@@ -318,11 +300,10 @@ def test_tensor_addition(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_addition(backend, dtype):
-  """ Checks that Tensor+scalar works.
-  """
+  """Checks that Tensor+scalar works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = A + B
@@ -332,21 +313,20 @@ def test_tensor_scalar_addition(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_raddition(backend, dtype):
-  """ Checks that scalar+Tensor works.
-  """
+  """Checks that scalar+Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = B + A
     result2 = A.backend.addition(B, testA)
     np.testing.assert_allclose(result.array, result2)
 
+
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_subtraction(backend, dtype):
-  """ Checks that Tensor-Tensor works.
-  """
+  """Checks that Tensor-Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
   B, initB = testing_utils.safe_randn(shape, backend, dtype)
@@ -360,11 +340,10 @@ def test_tensor_subtraction(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_subtraction(backend, dtype):
-  """ Checks that Tensor-scalar works.
-  """
+  """Checks that Tensor-scalar works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = A - B
@@ -374,11 +353,10 @@ def test_tensor_scalar_subtraction(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_scalar_rsubtraction(backend, dtype):
-  """ Checks that scalar-Tensor works.
-  """
+  """Checks that scalar-Tensor works."""
   shape = (2, 3, 1)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
-  B = 2.
+  B = 2.0
   if A is not None:
     testA = A.backend.convert_to_tensor(initA)
     result = B - A
@@ -388,8 +366,7 @@ def test_tensor_scalar_rsubtraction(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_matmul(backend, dtype):
-  """ Checks that Tensor@Tensor works.
-  """
+  """Checks that Tensor@Tensor works."""
   shape = (3, 3)
   A, initA = testing_utils.safe_randn(shape, backend, dtype)
   B, initB = testing_utils.safe_randn(shape, backend, dtype)
@@ -403,8 +380,7 @@ def test_tensor_matmul(backend, dtype):
 
 @pytest.mark.parametrize("dtype", testing_utils.np_float_dtypes)
 def test_tensor_ops_raise(dtype):
-  """ Checks that tensor operators raise the right error.
-  """
+  """Checks that tensor operators raise the right error."""
   shape = (2, 3, 1)
   A, _ = testing_utils.safe_randn(shape, "numpy", dtype)
   B, _ = testing_utils.safe_randn(shape, "jax", dtype)
@@ -431,8 +407,8 @@ def test_ncon_builder(backend):
   assert builder.tensors == [a, b, c]
   assert builder.axes == [[2, 1, -1], [2, 3, -2], [1, 3, -3]]
   np.testing.assert_allclose(
-      ncon_interface.ncon(
-          [a, b, c], 
-          [[2, 1, -1], [2, 3, -2], [1, 3, -3]], 
-          backend=backend).array,
-      ncon_interface.finalize(builder).array)
+    ncon_interface.ncon(
+      [a, b, c], [[2, 1, -1], [2, 3, -2], [1, 3, -3]], backend=backend
+    ).array,
+    ncon_interface.finalize(builder).array,
+  )

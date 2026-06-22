@@ -27,31 +27,37 @@ Tensor = Any
 _CACHED_MATVECS = {}
 _CACHED_FUNCTIONS = {}
 
+
 class JaxBackend(abstract_backend.AbstractBackend):
   """See abstract_backend.AbstractBackend for documentation."""
 
-  def __init__(self, dtype: Optional[np.dtype] = None,
-               precision: Optional[Text] = None) -> None:
+  def __init__(
+    self, dtype: Optional[np.dtype] = None, precision: Optional[Text] = None
+  ) -> None:
     # pylint: disable=global-variable-undefined
     global libjax  # Jax module
     global jnp  # jax.numpy module
     global jsp  # jax.scipy module
     super().__init__()
     try:
-      #pylint: disable=import-outside-toplevel
+      # pylint: disable=import-outside-toplevel
       import jax
     except ImportError as err:
-      raise ImportError("Jax not installed, please switch to a different "
-                        "backend or install Jax.") from err
+      raise ImportError(
+        "Jax not installed, please switch to a different backend or install Jax."
+      ) from err
     libjax = jax
     jnp = libjax.numpy
     jsp = libjax.scipy
     self.name = "jax"
     self._dtype = np.dtype(dtype) if dtype is not None else None
-    self.jax_precision = precision if precision is not None else libjax.lax.Precision.DEFAULT #pylint: disable=line-too-long
+    self.jax_precision = (
+      precision if precision is not None else libjax.lax.Precision.DEFAULT
+    )  # pylint: disable=line-too-long
 
-  def tensordot(self, a: Tensor, b: Tensor,
-                axes: Union[int, Sequence[Sequence[int]]]) -> Tensor:
+  def tensordot(
+    self, a: Tensor, b: Tensor, axes: Union[int, Sequence[Sequence[int]]]
+  ) -> Tensor:
     return jnp.tensordot(a, b, axes, precision=self.jax_precision)
 
   def reshape(self, tensor: Tensor, shape: Tensor) -> Tensor:
@@ -63,45 +69,39 @@ class JaxBackend(abstract_backend.AbstractBackend):
   def shape_concat(self, values: Tensor, axis: int) -> Tensor:
     return np.concatenate(values, axis)
 
-  def slice(self, tensor: Tensor, start_indices: Tuple[int, ...],
-            slice_sizes: Tuple[int, ...]) -> Tensor:
+  def slice(
+    self, tensor: Tensor, start_indices: Tuple[int, ...], slice_sizes: Tuple[int, ...]
+  ) -> Tensor:
     if len(start_indices) != len(slice_sizes):
-      raise ValueError("Lengths of start_indices and slice_sizes must be"
-                       "identical.")
+      raise ValueError("Lengths of start_indices and slice_sizes must beidentical.")
     return libjax.lax.dynamic_slice(tensor, start_indices, slice_sizes)
 
   def svd(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      max_singular_values: Optional[int] = None,
-      max_truncation_error: Optional[float] = None,
-      relative: Optional[bool] = False
+    self,
+    tensor: Tensor,
+    pivot_axis: int = -1,
+    max_singular_values: Optional[int] = None,
+    max_truncation_error: Optional[float] = None,
+    relative: Optional[bool] = False,
   ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     return decompositions.svd(
-        jnp,
-        tensor,
-        pivot_axis,
-        max_singular_values,
-        max_truncation_error,
-        relative=relative)
+      jnp,
+      tensor,
+      pivot_axis,
+      max_singular_values,
+      max_truncation_error,
+      relative=relative,
+    )
 
   def qr(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      non_negative_diagonal: bool = False
+    self, tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
   ) -> Tuple[Tensor, Tensor]:
     return decompositions.qr(jnp, tensor, pivot_axis, non_negative_diagonal)
 
   def rq(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      non_negative_diagonal: bool = False
+    self, tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
   ) -> Tuple[Tensor, Tensor]:
     return decompositions.rq(jnp, tensor, pivot_axis, non_negative_diagonal)
-
 
   def shape_tensor(self, tensor: Tensor) -> Tensor:
     return tensor.shape
@@ -119,50 +119,42 @@ class JaxBackend(abstract_backend.AbstractBackend):
     return jnp.sqrt(tensor)
 
   def convert_to_tensor(self, tensor: Tensor) -> Tensor:
-    if (not isinstance(tensor, (np.ndarray, jnp.ndarray))
-        and not jnp.isscalar(tensor)):
-      raise TypeError(("Expected a `jnp.array`, `np.array` or scalar. "
-                       f"Got {type(tensor)}"))
+    if not isinstance(tensor, (np.ndarray, jnp.ndarray)) and not jnp.isscalar(tensor):
+      raise TypeError(
+        (f"Expected a `jnp.array`, `np.array` or scalar. Got {type(tensor)}")
+      )
     result = jnp.asarray(tensor)
     return result
 
   def outer_product(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
-    return jnp.tensordot(tensor1, tensor2, 0,
-                         precision=self.jax_precision)
+    return jnp.tensordot(tensor1, tensor2, 0, precision=self.jax_precision)
 
-  def einsum(self,
-             expression: str,
-             *tensors: Tensor,
-             optimize: bool = True) -> Tensor:
-    return jnp.einsum(expression, *tensors, optimize=optimize,
-                      precision=self.jax_precision)
+  def einsum(self, expression: str, *tensors: Tensor, optimize: bool = True) -> Tensor:
+    return jnp.einsum(
+      expression, *tensors, optimize=optimize, precision=self.jax_precision
+    )
 
   def norm(self, tensor: Tensor) -> Tensor:
     return jnp.linalg.norm(tensor)
 
-  def eye(self,
-          N,
-          dtype: Optional[np.dtype] = None,
-          M: Optional[int] = None) -> Tensor:
+  def eye(self, N, dtype: Optional[np.dtype] = None, M: Optional[int] = None) -> Tensor:
     dtype = dtype if dtype is not None else jnp.float64
     return jnp.eye(N, M=M, dtype=dtype)
 
-  def ones(self,
-           shape: Tuple[int, ...],
-           dtype: Optional[np.dtype] = None) -> Tensor:
+  def ones(self, shape: Tuple[int, ...], dtype: Optional[np.dtype] = None) -> Tensor:
     dtype = dtype if dtype is not None else jnp.float64
     return jnp.ones(shape, dtype=dtype)
 
-  def zeros(self,
-            shape: Tuple[int, ...],
-            dtype: Optional[np.dtype] = None) -> Tensor:
+  def zeros(self, shape: Tuple[int, ...], dtype: Optional[np.dtype] = None) -> Tensor:
     dtype = dtype if dtype is not None else jnp.float64
     return jnp.zeros(shape, dtype=dtype)
 
-  def randn(self,
-            shape: Tuple[int, ...],
-            dtype: Optional[np.dtype] = None,
-            seed: Optional[int] = None) -> Tensor:
+  def randn(
+    self,
+    shape: Tuple[int, ...],
+    dtype: Optional[np.dtype] = None,
+    seed: Optional[int] = None,
+  ) -> Tensor:
     if not seed:
       seed = np.random.randint(0, 2**63)
     key = libjax.random.PRNGKey(seed)
@@ -178,8 +170,10 @@ class JaxBackend(abstract_backend.AbstractBackend):
       real_part = libjax.random.normal(key, shape, dtype=real_dtype)
       complex_part = libjax.random.normal(key_2, shape, dtype=real_dtype)
       unit = (
-          np.complex64(1j)
-          if complex_dtype == np.dtype(np.complex64) else np.complex128(1j))
+        np.complex64(1j)
+        if complex_dtype == np.dtype(np.complex64)
+        else np.complex128(1j)
+      )
       return real_part + unit * complex_part
 
     if np.dtype(dtype) is np.dtype(jnp.complex128):
@@ -189,11 +183,13 @@ class JaxBackend(abstract_backend.AbstractBackend):
 
     return libjax.random.normal(key, shape).astype(dtype)
 
-  def random_uniform(self,
-                     shape: Tuple[int, ...],
-                     boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
-                     dtype: Optional[np.dtype] = None,
-                     seed: Optional[int] = None) -> Tensor:
+  def random_uniform(
+    self,
+    shape: Tuple[int, ...],
+    boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
+    dtype: Optional[np.dtype] = None,
+    seed: Optional[int] = None,
+  ) -> Tensor:
     if not seed:
       seed = np.random.randint(0, 2**63)
     key = libjax.random.PRNGKey(seed)
@@ -207,20 +203,16 @@ class JaxBackend(abstract_backend.AbstractBackend):
       key_2 = libjax.random.PRNGKey(seed + 1)
 
       real_part = libjax.random.uniform(
-          key,
-          shape,
-          dtype=real_dtype,
-          minval=boundaries[0],
-          maxval=boundaries[1])
+        key, shape, dtype=real_dtype, minval=boundaries[0], maxval=boundaries[1]
+      )
       complex_part = libjax.random.uniform(
-          key_2,
-          shape,
-          dtype=real_dtype,
-          minval=boundaries[0],
-          maxval=boundaries[1])
+        key_2, shape, dtype=real_dtype, minval=boundaries[0], maxval=boundaries[1]
+      )
       unit = (
-          np.complex64(1j)
-          if complex_dtype == np.dtype(np.complex64) else np.complex128(1j))
+        np.complex64(1j)
+        if complex_dtype == np.dtype(np.complex64)
+        else np.complex128(1j)
+      )
       return real_part + unit * complex_part
 
     if np.dtype(dtype) is np.dtype(jnp.complex128):
@@ -229,19 +221,22 @@ class JaxBackend(abstract_backend.AbstractBackend):
       return cmplx_random_uniform(dtype, jnp.float32)
 
     return libjax.random.uniform(
-        key, shape, minval=boundaries[0], maxval=boundaries[1]).astype(dtype)
+      key, shape, minval=boundaries[0], maxval=boundaries[1]
+    ).astype(dtype)
 
-  def eigs(self, #pylint: disable=arguments-differ
-           A: Callable,
-           args: Optional[List] = None,
-           initial_state: Optional[Tensor] = None,
-           shape: Optional[Tuple[int, ...]] = None,
-           dtype: Optional[Type[np.number]] = None,
-           num_krylov_vecs: int = 50,
-           numeig: int = 6,
-           tol: float = 1E-8,
-           which: Text = 'LR',
-           maxiter: int = 20) -> Tuple[Tensor, List]:
+  def eigs(
+    self,  # pylint: disable=arguments-differ
+    A: Callable,
+    args: Optional[List] = None,
+    initial_state: Optional[Tensor] = None,
+    shape: Optional[Tuple[int, ...]] = None,
+    dtype: Optional[Type[np.number]] = None,
+    num_krylov_vecs: int = 50,
+    numeig: int = 6,
+    tol: float = 1e-8,
+    which: Text = "LR",
+    maxiter: int = 20,
+  ) -> Tuple[Tensor, List]:
     """
     Implicitly restarted Arnoldi method for finding the lowest
     eigenvector-eigenvalue pairs of a linear operator `A`.
@@ -309,21 +304,21 @@ class JaxBackend(abstract_backend.AbstractBackend):
 
     if args is None:
       args = []
-    if which not in ('LR', 'LM'):
-      raise ValueError(f'which = {which} is currently not supported.')
+    if which not in ("LR", "LM"):
+      raise ValueError(f"which = {which} is currently not supported.")
 
     if numeig > num_krylov_vecs:
-      raise ValueError('`num_krylov_vecs` >= `numeig` required!')
+      raise ValueError("`num_krylov_vecs` >= `numeig` required!")
 
     if initial_state is None:
       if (shape is None) or (dtype is None):
-        raise ValueError("if no `initial_state` is passed, then `shape` and"
-                         "`dtype` have to be provided")
+        raise ValueError(
+          "if no `initial_state` is passed, then `shape` and`dtype` have to be provided"
+        )
       initial_state = self.randn(shape, dtype)
 
     if not isinstance(initial_state, (jnp.ndarray, np.ndarray)):
-      raise TypeError("Expected a `jax.array`. Got {}".format(
-          type(initial_state)))
+      raise TypeError("Expected a `jax.array`. Got {}".format(type(initial_state)))
 
     if A not in _CACHED_MATVECS:
       _CACHED_MATVECS[A] = libjax.tree_util.Partial(libjax.jit(A))
@@ -332,31 +327,39 @@ class JaxBackend(abstract_backend.AbstractBackend):
       imp_arnoldi = jitted_functions._implicitly_restarted_arnoldi(libjax)
       _CACHED_FUNCTIONS["imp_arnoldi"] = imp_arnoldi
 
-    eta, U, numits = _CACHED_FUNCTIONS["imp_arnoldi"](_CACHED_MATVECS[A], args,
-                                                      initial_state,
-                                                      num_krylov_vecs, numeig,
-                                                      which, tol, maxiter,
-                                                      self.jax_precision)
+    eta, U, numits = _CACHED_FUNCTIONS["imp_arnoldi"](
+      _CACHED_MATVECS[A],
+      args,
+      initial_state,
+      num_krylov_vecs,
+      numeig,
+      which,
+      tol,
+      maxiter,
+      self.jax_precision,
+    )
     if numeig > numits:
       warnings.warn(
-          f"Arnoldi terminated early after numits = {numits}"
-          f" < numeig = {numeig} steps. For this value of `numeig `"
-          f"the routine will return spurious eigenvalues of value 0.0."
-          f"Use a smaller value of numeig, or a smaller value for `tol`")
+        f"Arnoldi terminated early after numits = {numits}"
+        f" < numeig = {numeig} steps. For this value of `numeig `"
+        f"the routine will return spurious eigenvalues of value 0.0."
+        f"Use a smaller value of numeig, or a smaller value for `tol`"
+      )
     return eta, U
 
   def eigsh(
-      self,  #pylint: disable=arguments-differ
-      A: Callable,
-      args: Optional[List] = None,
-      initial_state: Optional[Tensor] = None,
-      shape: Optional[Tuple[int, ...]] = None,
-      dtype: Optional[Type[np.number]] = None,
-      num_krylov_vecs: int = 50,
-      numeig: int = 6,
-      tol: float = 1E-8,
-      which: Text = 'SA',
-      maxiter: int = 20) -> Tuple[Tensor, List]:
+    self,  # pylint: disable=arguments-differ
+    A: Callable,
+    args: Optional[List] = None,
+    initial_state: Optional[Tensor] = None,
+    shape: Optional[Tuple[int, ...]] = None,
+    dtype: Optional[Type[np.number]] = None,
+    num_krylov_vecs: int = 50,
+    numeig: int = 6,
+    tol: float = 1e-8,
+    which: Text = "SA",
+    maxiter: int = 20,
+  ) -> Tuple[Tensor, List]:
     """
     Implicitly restarted Lanczos method for finding the lowest
     eigenvector-eigenvalue pairs of a symmetric (hermitian) linear operator `A`.
@@ -424,21 +427,21 @@ class JaxBackend(abstract_backend.AbstractBackend):
 
     if args is None:
       args = []
-    if which not in ('SA', 'LA', 'LM'):
-      raise ValueError(f'which = {which} is currently not supported.')
+    if which not in ("SA", "LA", "LM"):
+      raise ValueError(f"which = {which} is currently not supported.")
 
     if numeig > num_krylov_vecs:
-      raise ValueError('`num_krylov_vecs` >= `numeig` required!')
+      raise ValueError("`num_krylov_vecs` >= `numeig` required!")
 
     if initial_state is None:
       if (shape is None) or (dtype is None):
-        raise ValueError("if no `initial_state` is passed, then `shape` and"
-                         "`dtype` have to be provided")
+        raise ValueError(
+          "if no `initial_state` is passed, then `shape` and`dtype` have to be provided"
+        )
       initial_state = self.randn(shape, dtype)
 
     if not isinstance(initial_state, (jnp.ndarray, np.ndarray)):
-      raise TypeError("Expected a `jax.array`. Got {}".format(
-          type(initial_state)))
+      raise TypeError("Expected a `jax.array`. Got {}".format(type(initial_state)))
 
     if A not in _CACHED_MATVECS:
       _CACHED_MATVECS[A] = libjax.tree_util.Partial(libjax.jit(A))
@@ -447,32 +450,40 @@ class JaxBackend(abstract_backend.AbstractBackend):
       imp_lanczos = jitted_functions._implicitly_restarted_lanczos(libjax)
       _CACHED_FUNCTIONS["imp_lanczos"] = imp_lanczos
 
-    eta, U, numits = _CACHED_FUNCTIONS["imp_lanczos"](_CACHED_MATVECS[A], args,
-                                                      initial_state,
-                                                      num_krylov_vecs, numeig,
-                                                      which, tol, maxiter,
-                                                      self.jax_precision)
+    eta, U, numits = _CACHED_FUNCTIONS["imp_lanczos"](
+      _CACHED_MATVECS[A],
+      args,
+      initial_state,
+      num_krylov_vecs,
+      numeig,
+      which,
+      tol,
+      maxiter,
+      self.jax_precision,
+    )
     if numeig > numits:
       warnings.warn(
-          f"Arnoldi terminated early after numits = {numits}"
-          f" < numeig = {numeig} steps. For this value of `numeig `"
-          f"the routine will return spurious eigenvalues of value 0.0."
-          f"Use a smaller value of numeig, or a smaller value for `tol`")
+        f"Arnoldi terminated early after numits = {numits}"
+        f" < numeig = {numeig} steps. For this value of `numeig `"
+        f"the routine will return spurious eigenvalues of value 0.0."
+        f"Use a smaller value of numeig, or a smaller value for `tol`"
+      )
     return eta, U
 
   def eigsh_lanczos(
-      self,
-      A: Callable,
-      args: Optional[List[Tensor]] = None,
-      initial_state: Optional[Tensor] = None,
-      shape: Optional[Tuple] = None,
-      dtype: Optional[Type[np.number]] = None,
-      num_krylov_vecs: int = 20,
-      numeig: int = 1,
-      tol: float = 1E-8,
-      delta: float = 1E-8,
-      ndiag: int = 10,
-      reorthogonalize: Optional[bool] = False) -> Tuple[Tensor, List]:
+    self,
+    A: Callable,
+    args: Optional[List[Tensor]] = None,
+    initial_state: Optional[Tensor] = None,
+    shape: Optional[Tuple] = None,
+    dtype: Optional[Type[np.number]] = None,
+    num_krylov_vecs: int = 20,
+    numeig: int = 1,
+    tol: float = 1e-8,
+    delta: float = 1e-8,
+    ndiag: int = 10,
+    reorthogonalize: Optional[bool] = False,
+  ) -> Tuple[Tensor, List]:
     """
     Lanczos method for finding the lowest eigenvector-eigenvalue pairs
     of a hermitian linear operator `A`. `A` is a function implementing
@@ -544,50 +555,61 @@ class JaxBackend(abstract_backend.AbstractBackend):
     if args is None:
       args = []
     if num_krylov_vecs < numeig:
-      raise ValueError('`num_krylov_vecs` >= `numeig` required!')
+      raise ValueError("`num_krylov_vecs` >= `numeig` required!")
 
     if numeig > 1 and not reorthogonalize:
       raise ValueError(
-          "Got numeig = {} > 1 and `reorthogonalize = False`. "
-          "Use `reorthogonalize=True` for `numeig > 1`".format(numeig))
+        "Got numeig = {} > 1 and `reorthogonalize = False`. "
+        "Use `reorthogonalize=True` for `numeig > 1`".format(numeig)
+      )
     if initial_state is None:
       if (shape is None) or (dtype is None):
-        raise ValueError("if no `initial_state` is passed, then `shape` and"
-                         "`dtype` have to be provided")
+        raise ValueError(
+          "if no `initial_state` is passed, then `shape` and`dtype` have to be provided"
+        )
       initial_state = self.randn(shape, dtype)
 
     if not isinstance(initial_state, (jnp.ndarray, np.ndarray)):
-      raise TypeError("Expected a `jax.array`. Got {}".format(
-          type(initial_state)))
+      raise TypeError("Expected a `jax.array`. Got {}".format(type(initial_state)))
     if A not in _CACHED_MATVECS:
       _CACHED_MATVECS[A] = libjax.tree_util.Partial(A)
     if "eigsh_lanczos" not in _CACHED_FUNCTIONS:
       eigsh_lanczos = jitted_functions._generate_jitted_eigsh_lanczos(libjax)
       _CACHED_FUNCTIONS["eigsh_lanczos"] = eigsh_lanczos
     eigsh_lanczos = _CACHED_FUNCTIONS["eigsh_lanczos"]
-    eta, U, numits = eigsh_lanczos(_CACHED_MATVECS[A], args, initial_state,
-                                   num_krylov_vecs, numeig, delta,
-                                   reorthogonalize, self.jax_precision)
+    eta, U, numits = eigsh_lanczos(
+      _CACHED_MATVECS[A],
+      args,
+      initial_state,
+      num_krylov_vecs,
+      numeig,
+      delta,
+      reorthogonalize,
+      self.jax_precision,
+    )
     if numeig > numits:
       warnings.warn(
-          f"Lanczos terminated early after numits = {numits}"
-          f" < numeig = {numeig} steps. For this value of `numeig `"
-          f"the routine will return spurious eigenvalues of value 0.0."
-          f"Use a smaller value of numeig, or a smaller value for `tol`")
+        f"Lanczos terminated early after numits = {numits}"
+        f" < numeig = {numeig} steps. For this value of `numeig `"
+        f"the routine will return spurious eigenvalues of value 0.0."
+        f"Use a smaller value of numeig, or a smaller value for `tol`"
+      )
     return eta, U
 
-  def _gmres(self,
-             A_mv: Callable,
-             b: Tensor,
-             A_args: List,
-             A_kwargs: dict,
-             x0: Tensor,
-             tol: float,
-             atol: float,
-             num_krylov_vectors: int,
-             maxiter: int,
-             M: Optional[Callable] = None) -> Tuple[Tensor, int]:
-    """ GMRES solves the linear system A @ x = b for x given a vector `b` and
+  def _gmres(
+    self,
+    A_mv: Callable,
+    b: Tensor,
+    A_args: List,
+    A_kwargs: dict,
+    x0: Tensor,
+    tol: float,
+    atol: float,
+    num_krylov_vectors: int,
+    maxiter: int,
+    M: Optional[Callable] = None,
+  ) -> Tuple[Tensor, int]:
+    """GMRES solves the linear system A @ x = b for x given a vector `b` and
     a general (not necessarily symmetric/Hermitian) linear operator `A`.
 
     As a Krylov method, GMRES does not require a concrete matrix representation
@@ -683,21 +705,30 @@ class JaxBackend(abstract_backend.AbstractBackend):
     if A_kwargs:
       raise NotImplementedError("A_kwargs is not supported by the Jax backend.")
 
-
     if A_mv not in _CACHED_MATVECS:
+
       @libjax.tree_util.Partial
       def matrix_matvec(x, *args):
         x = x.reshape(b.shape)
         result = A_mv(x, *args)
         return result.ravel()
+
       _CACHED_MATVECS[A_mv] = matrix_matvec
 
     if "gmres" not in _CACHED_FUNCTIONS:
       _CACHED_FUNCTIONS["gmres"] = jitted_functions.gmres_wrapper(libjax)
     gmres_m = _CACHED_FUNCTIONS["gmres"].gmres_m
-    x, _, n_iter, converged = gmres_m(_CACHED_MATVECS[A_mv], A_args, b.ravel(),
-                                      x0, tol, atol, num_krylov_vectors,
-                                      maxiter, self.jax_precision)
+    x, _, n_iter, converged = gmres_m(
+      _CACHED_MATVECS[A_mv],
+      A_args,
+      b.ravel(),
+      x0,
+      tol,
+      atol,
+      num_krylov_vectors,
+      maxiter,
+      self.jax_precision,
+    )
     if converged:
       info = 0
     else:
@@ -723,31 +754,35 @@ class JaxBackend(abstract_backend.AbstractBackend):
   def divide(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     return tensor1 / tensor2
 
-  def index_update(self, tensor: Tensor, mask: Tensor,
-                   assignee: Tensor) -> Tensor:
+  def index_update(self, tensor: Tensor, mask: Tensor, assignee: Tensor) -> Tensor:
     return libjax.ops.index_update(tensor, mask, assignee)
 
   def inv(self, matrix: Tensor) -> Tensor:
     if len(matrix.shape) > 2:
-      raise ValueError("input to numpy backend method `inv` has shape {}."
-                       " Only matrices are supported.".format(matrix.shape))
+      raise ValueError(
+        "input to numpy backend method `inv` has shape {}."
+        " Only matrices are supported.".format(matrix.shape)
+      )
     return jnp.linalg.inv(matrix)
 
-  def broadcast_right_multiplication(self, tensor1: Tensor,
-                                     tensor2: Tensor) -> Tensor:
+  def broadcast_right_multiplication(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     if len(tensor2.shape) != 1:
-      raise ValueError("only order-1 tensors are allowed for `tensor2`,"
-                       " found `tensor2.shape = {}`".format(tensor2.shape))
+      raise ValueError(
+        "only order-1 tensors are allowed for `tensor2`,"
+        " found `tensor2.shape = {}`".format(tensor2.shape)
+      )
     return tensor1 * tensor2
 
-  def broadcast_left_multiplication(self, tensor1: Tensor,
-                                    tensor2: Tensor) -> Tensor:
+  def broadcast_left_multiplication(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     if len(tensor1.shape) != 1:
-      raise ValueError("only order-1 tensors are allowed for `tensor1`,"
-                       " found `tensor1.shape = {}`".format(tensor1.shape))
+      raise ValueError(
+        "only order-1 tensors are allowed for `tensor1`,"
+        " found `tensor1.shape = {}`".format(tensor1.shape)
+      )
 
     t1_broadcast_shape = self.shape_concat(
-        [self.shape_tensor(tensor1), [1] * (len(tensor2.shape) - 1)], axis=-1)
+      [self.shape_tensor(tensor1), [1] * (len(tensor2.shape) - 1)], axis=-1
+    )
     return tensor2 * self.reshape(tensor1, t1_broadcast_shape)
 
   def sin(self, tensor: Tensor) -> Tensor:
@@ -764,22 +799,26 @@ class JaxBackend(abstract_backend.AbstractBackend):
 
   def expm(self, matrix: Tensor) -> Tensor:
     if len(matrix.shape) != 2:
-      raise ValueError("input to numpy backend method `expm` has shape {}."
-                       " Only matrices are supported.".format(matrix.shape))
+      raise ValueError(
+        "input to numpy backend method `expm` has shape {}."
+        " Only matrices are supported.".format(matrix.shape)
+      )
     if matrix.shape[0] != matrix.shape[1]:
-      raise ValueError("input to numpy backend method `expm` only supports"
-                       " N*N matrix, {x}*{y} matrix is given".format(
-                           x=matrix.shape[0], y=matrix.shape[1]))
+      raise ValueError(
+        "input to numpy backend method `expm` only supports"
+        " N*N matrix, {x}*{y} matrix is given".format(
+          x=matrix.shape[0], y=matrix.shape[1]
+        )
+      )
     # pylint: disable=no-member
     return jsp.linalg.expm(matrix)
 
   def jit(self, fun: Callable, *args: List, **kwargs: dict) -> Callable:
     return libjax.jit(fun, *args, **kwargs)
 
-  def sum(self,
-          tensor: Tensor,
-          axis: Optional[Sequence[int]] = None,
-          keepdims: bool = False) -> Tensor:
+  def sum(
+    self, tensor: Tensor, axis: Optional[Sequence[int]] = None, keepdims: bool = False
+  ) -> Tensor:
     return jnp.sum(tensor, axis=axis, keepdims=keepdims)
 
   def matmul(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
@@ -787,8 +826,9 @@ class JaxBackend(abstract_backend.AbstractBackend):
       raise ValueError("inputs to `matmul` have to be tensors of order > 1,")
     return jnp.matmul(tensor1, tensor2, precision=self.jax_precision)
 
-  def diagonal(self, tensor: Tensor, offset: int = 0, axis1: int = -2,
-               axis2: int = -1) -> Tensor:
+  def diagonal(
+    self, tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1
+  ) -> Tensor:
     """Return specified diagonals.
 
     If tensor is 2-D, returns the diagonal of tensor with the given offset,
@@ -817,7 +857,7 @@ class JaxBackend(abstract_backend.AbstractBackend):
     return jnp.diagonal(tensor, offset=offset, axis1=axis1, axis2=axis2)
 
   def diagflat(self, tensor: Tensor, k: int = 0) -> Tensor:
-    """ Flattens tensor and creates a new matrix of zeros with its elements
+    """Flattens tensor and creates a new matrix of zeros with its elements
     on the k'th diagonal.
     Args:
       tensor: A tensor.
@@ -827,8 +867,9 @@ class JaxBackend(abstract_backend.AbstractBackend):
     """
     return jnp.diag(jnp.ravel(tensor), k=k)
 
-  def trace(self, tensor: Tensor, offset: int = 0, axis1: int = -2,
-            axis2: int = -1) -> Tensor:
+  def trace(
+    self, tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1
+  ) -> Tensor:
     """Return summed entries along diagonals.
 
     If tensor is 2-D, the sum is over the

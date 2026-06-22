@@ -7,6 +7,7 @@ import pytest
 import tensornetwork
 from tensornetwork.block_sparse.charge import charge_equal
 from tensornetwork import backends
+
 config.update("jax_enable_x64", True)
 
 np_real = [np.float32, np.float64]
@@ -14,9 +15,18 @@ np_complex = [np.complex64, np.complex128]
 np_float_dtypes = np_real + np_complex
 np_int = [np.int8, np.int16, np.int32, np.int64]
 np_uint = [np.uint8, np.uint16, np.uint32, np.uint64]
-np_not_bool = np_float_dtypes + np_int + np_uint + [None, ]
+np_not_bool = (
+  np_float_dtypes
+  + np_int
+  + np_uint
+  + [
+    None,
+  ]
+)
 np_not_half = [np.float32, np.float64] + np_complex
-np_all_dtypes = np_not_bool + [np.bool, ]
+np_all_dtypes = np_not_bool + [
+  np.bool,
+]
 
 torch_supported_dtypes = np_real + np_int + [np.uint8, np.bool, None]
 # torch_supported_dtypes = [np.float32, np.float64]
@@ -89,9 +99,20 @@ def check_contraction_dtype(backend, dtype):
   """
   skip = False
   if backend == "tensorflow":
-    if dtype in [np.uint8, tf.uint8, np.uint16, tf.uint16, np.int8, tf.int8,
-                 np.int16, tf.int16, np.uint32, tf.uint32, np.uint64,
-                 tf.uint64]:
+    if dtype in [
+      np.uint8,
+      tf.uint8,
+      np.uint16,
+      tf.uint16,
+      np.int8,
+      tf.int8,
+      np.int16,
+      tf.int16,
+      np.uint32,
+      tf.uint32,
+      np.uint64,
+      tf.uint64,
+    ]:
       skip = True
 
   if backend == "pytorch":
@@ -102,27 +123,30 @@ def check_contraction_dtype(backend, dtype):
 
 
 def assert_allclose(expected, actual, backend, **kwargs):
-  if backend.name == 'symmetric':
+  if backend.name == "symmetric":
     exp = expected.contiguous()
     act = actual.contiguous()
     if exp.shape != act.shape:
-      raise ValueError(f"expected shape = {exp.shape}, "
-                       f"actual shape = {act.shape}")
+      raise ValueError(f"expected shape = {exp.shape}, actual shape = {act.shape}")
     if len(exp.flat_charges) != len(act.flat_charges):
       raise ValueError("expected charges differ from actual charges")
 
     if len(exp.flat_flows) != len(act.flat_flows):
-      raise ValueError(f"expected flat flows = {exp.flat_flows}"
-                       f" differ from actual flat flows = {act.flat_flows}")
+      raise ValueError(
+        f"expected flat flows = {exp.flat_flows}"
+        f" differ from actual flat flows = {act.flat_flows}"
+      )
 
     for c1, c2 in zip(exp.flat_charges, act.flat_charges):
       if not charge_equal(c1, c2):
         raise ValueError("expected charges differ from actual charges")
 
     if not np.all(np.array(exp.flat_flows) == np.array(act.flat_flows)):
-      raise ValueError(f"expected flat flows = {exp.flat_flows}"
-                       f" differ from actual flat flows = {act.flat_flows}")
-    if not np.all(np.abs(exp.data - act.data) < 1E-10):
+      raise ValueError(
+        f"expected flat flows = {exp.flat_flows}"
+        f" differ from actual flat flows = {act.flat_flows}"
+      )
+    if not np.all(np.abs(exp.data - act.data) < 1e-10):
       np.testing.assert_allclose(act.data, exp.data, **kwargs)
   else:
     np.testing.assert_allclose(actual, expected, **kwargs)

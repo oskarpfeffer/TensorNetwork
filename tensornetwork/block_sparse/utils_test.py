@@ -2,9 +2,20 @@ import numpy as np
 import pytest
 import itertools
 from tensornetwork.block_sparse.utils import (
-    flatten, fuse_stride_arrays, fuse_ndarrays, fuse_degeneracies,
-    _find_best_partition, _get_strides, unique, get_dtype, get_real_dtype,
-    intersect, collapse, expand, _intersect_ndarray)
+  flatten,
+  fuse_stride_arrays,
+  fuse_ndarrays,
+  fuse_degeneracies,
+  _find_best_partition,
+  _get_strides,
+  unique,
+  get_dtype,
+  get_real_dtype,
+  intersect,
+  collapse,
+  expand,
+  _intersect_ndarray,
+)
 
 np_dtypes = [np.float64, np.complex128]
 np_tensordot_dtypes = [np.float64, np.complex128]
@@ -20,10 +31,12 @@ def test_fuse_stride_arrays():
   dims = np.asarray([2, 3, 4, 5])
   strides = np.asarray([120, 60, 20, 5, 1])
   actual = fuse_stride_arrays(dims, strides)
-  expected = fuse_ndarrays([
+  expected = fuse_ndarrays(
+    [
       np.arange(0, strides[n] * dims[n], strides[n], dtype=np.uint32)
       for n in range(len(dims))
-  ])
+    ]
+  )
   np.testing.assert_allclose(actual, expected)
 
 
@@ -51,15 +64,16 @@ def test_find_best_partition_raises():
   p = _find_best_partition(d)
   assert p == 3
 
-#pylint: disable=too-many-return-statements
-def get_index(return_index, return_inverse, return_counts, which):#pylint: disable=inconsistent-return-statements
-  if which == 'index':
+
+# pylint: disable=too-many-return-statements
+def get_index(return_index, return_inverse, return_counts, which):  # pylint: disable=inconsistent-return-statements
+  if which == "index":
     return 1 if return_index else -1
-  if which == 'inverse':
+  if which == "inverse":
     if return_index:
       return 2 if return_inverse else -1
     return 1 if return_inverse else -1
-  if which == 'counts':
+  if which == "counts":
     if return_index and return_inverse:
       return 3 if return_counts else -1
     if return_index or return_inverse:
@@ -67,16 +81,21 @@ def get_index(return_index, return_inverse, return_counts, which):#pylint: disab
     return 1 if return_counts else -1
 
 
-@pytest.mark.parametrize('N, dtype, resdtype', [(1, np.int8, np.int8),
-                                                (2, np.int8, np.int16),
-                                                (2, np.int16, np.int32),
-                                                (2, np.int32, np.int64),
-                                                (3, np.int8, np.int32),
-                                                (3, np.int16, np.int64),
-                                                (4, np.int8, np.int32),
-                                                (4, np.int16, np.int64),
-                                                (5, np.int8, np.int64),
-                                                (6, np.int8, np.int64)])
+@pytest.mark.parametrize(
+  "N, dtype, resdtype",
+  [
+    (1, np.int8, np.int8),
+    (2, np.int8, np.int16),
+    (2, np.int16, np.int32),
+    (2, np.int32, np.int64),
+    (3, np.int8, np.int32),
+    (3, np.int16, np.int64),
+    (4, np.int8, np.int32),
+    (4, np.int16, np.int64),
+    (5, np.int8, np.int64),
+    (6, np.int8, np.int64),
+  ],
+)
 def test_collapse(N, dtype, resdtype):
   D = 10000
   a = np.random.randint(-5, 5, (D, N), dtype=dtype)
@@ -85,12 +104,12 @@ def test_collapse(N, dtype, resdtype):
     expected = np.squeeze(a.view(resdtype))
   elif N == 3:
     expected = np.squeeze(
-        np.concatenate([a, np.zeros((D, 1), dtype=dtype)],
-                       axis=1).view(resdtype))
+      np.concatenate([a, np.zeros((D, 1), dtype=dtype)], axis=1).view(resdtype)
+    )
   elif N > 4:
     expected = np.squeeze(
-        np.concatenate([a, np.zeros((D, 8 - N), dtype=dtype)],
-                       axis=1).view(resdtype))
+      np.concatenate([a, np.zeros((D, 8 - N), dtype=dtype)], axis=1).view(resdtype)
+    )
 
   np.testing.assert_allclose(collapsed, expected)
 
@@ -104,11 +123,23 @@ def test_collapse_2():
   np.testing.assert_allclose(collapsed, a)
 
 
-@pytest.mark.parametrize('N, dtype',
-                         [(1, np.int8), (1, np.int16), (1, np.int32),
-                          (1, np.int64), (2, np.int8), (2, np.int16),
-                          (2, np.int32), (3, np.int8), (3, np.int16),
-                          (4, np.int8), (4, np.int16), (4, np.int32)])
+@pytest.mark.parametrize(
+  "N, dtype",
+  [
+    (1, np.int8),
+    (1, np.int16),
+    (1, np.int32),
+    (1, np.int64),
+    (2, np.int8),
+    (2, np.int16),
+    (2, np.int32),
+    (3, np.int8),
+    (3, np.int16),
+    (4, np.int8),
+    (4, np.int16),
+    (4, np.int32),
+  ],
+)
 def test_collapse_expand(N, dtype):
   D = 10000
   expected = np.random.randint(-5, 5, (D, N), dtype=dtype)
@@ -117,23 +148,29 @@ def test_collapse_expand(N, dtype):
   np.testing.assert_allclose(expected, actual)
 
 
-@pytest.mark.parametrize('N, label_dtype, D', [(1, np.int8, 1000),
-                                               (1, np.int16, 1000),
-                                               (2, np.int8, 100),
-                                               (2, np.int16, 1000),
-                                               (3, np.int8, 100),
-                                               (3, np.int16, 10000),
-                                               (4, np.int8, 100),
-                                               (4, np.int16, 10000),
-                                               (4, np.int32, 100000)])
-@pytest.mark.parametrize('return_index', [True, False])
-@pytest.mark.parametrize('return_inverse', [True, False])
-@pytest.mark.parametrize('return_counts', [True, False])
+@pytest.mark.parametrize(
+  "N, label_dtype, D",
+  [
+    (1, np.int8, 1000),
+    (1, np.int16, 1000),
+    (2, np.int8, 100),
+    (2, np.int16, 1000),
+    (3, np.int8, 100),
+    (3, np.int16, 10000),
+    (4, np.int8, 100),
+    (4, np.int16, 10000),
+    (4, np.int32, 100000),
+  ],
+)
+@pytest.mark.parametrize("return_index", [True, False])
+@pytest.mark.parametrize("return_inverse", [True, False])
+@pytest.mark.parametrize("return_counts", [True, False])
 def test_unique(N, label_dtype, D, return_index, return_inverse, return_counts):
   a = np.random.randint(-10, 10, (D, N), dtype=np.int16)
   expected = np.unique(a, return_index, return_inverse, return_counts, axis=0)
   actual = unique(
-      a, return_index, return_inverse, return_counts, label_dtype=label_dtype)
+    a, return_index, return_inverse, return_counts, label_dtype=label_dtype
+  )
 
   def test_array(act, exp):
     if N != 3:
@@ -143,12 +180,16 @@ def test_unique(N, label_dtype, D, return_index, return_inverse, return_counts):
       ordexp = np.argsort(t1)
     else:
       t1 = np.squeeze(
-          np.concatenate([exp, np.zeros((exp.shape[0], 1), dtype=np.int16)],
-                         axis=1).view(get_dtype(2 * N)))
+        np.concatenate([exp, np.zeros((exp.shape[0], 1), dtype=np.int16)], axis=1).view(
+          get_dtype(2 * N)
+        )
+      )
 
       t2 = np.squeeze(
-          np.concatenate([act, np.zeros((act.shape[0], 1), dtype=np.int16)],
-                         axis=1).view(get_dtype(2 * N)))
+        np.concatenate([act, np.zeros((act.shape[0], 1), dtype=np.int16)], axis=1).view(
+          get_dtype(2 * N)
+        )
+      )
 
       ordact = np.argsort(t2)
       ordexp = np.argsort(t1)
@@ -160,10 +201,10 @@ def test_unique(N, label_dtype, D, return_index, return_inverse, return_counts):
   else:
     ordact, ordexp = test_array(actual[0], expected[0])
     if return_index:
-      ind = get_index(return_index, return_inverse, return_counts, 'index')
+      ind = get_index(return_index, return_inverse, return_counts, "index")
       np.testing.assert_allclose(actual[ind][ordact], expected[ind][ordexp])
     if return_inverse:
-      ind = get_index(return_index, return_inverse, return_counts, 'inverse')
+      ind = get_index(return_index, return_inverse, return_counts, "inverse")
       mapact = np.zeros(len(ordact), dtype=np.int16)
       mapact[ordact] = np.arange(len(ordact), dtype=np.int16)
       mapexp = np.zeros(len(ordexp), dtype=np.int16)
@@ -171,13 +212,13 @@ def test_unique(N, label_dtype, D, return_index, return_inverse, return_counts):
       np.testing.assert_allclose(mapact[actual[ind]], mapexp[expected[ind]])
       assert actual[ind].dtype == label_dtype
     if return_counts:
-      ind = get_index(return_index, return_inverse, return_counts, 'counts')
+      ind = get_index(return_index, return_inverse, return_counts, "counts")
       np.testing.assert_allclose(actual[ind][ordact], expected[ind][ordexp])
 
 
-@pytest.mark.parametrize('return_index', [True, False])
-@pytest.mark.parametrize('return_inverse', [True, False])
-@pytest.mark.parametrize('return_counts', [True, False])
+@pytest.mark.parametrize("return_index", [True, False])
+@pytest.mark.parametrize("return_inverse", [True, False])
+@pytest.mark.parametrize("return_counts", [True, False])
 def test_unique_2(return_index, return_inverse, return_counts):
   N = 5
   D = 1000
@@ -190,9 +231,10 @@ def test_unique_2(return_index, return_inverse, return_counts):
     for n, e in enumerate(expected):
       np.testing.assert_allclose(e, actual[n])
 
-@pytest.mark.parametrize('return_index', [True, False])
-@pytest.mark.parametrize('return_inverse', [True, False])
-@pytest.mark.parametrize('return_counts', [True, False])
+
+@pytest.mark.parametrize("return_index", [True, False])
+@pytest.mark.parametrize("return_inverse", [True, False])
+@pytest.mark.parametrize("return_counts", [True, False])
 def test_unique_1d(return_index, return_inverse, return_counts):
   D = 1000
   a = np.random.randint(-10, 10, D, dtype=np.int16)
@@ -204,14 +246,16 @@ def test_unique_1d(return_index, return_inverse, return_counts):
     for n, e in enumerate(expected):
       np.testing.assert_allclose(e, actual[n])
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_1(dtype):
   a = np.array([[0, 1, 2], [2, 3, 4]], dtype=dtype)
   b = np.array([[0, -2, 6], [2, 3, 4]], dtype=dtype)
   out = intersect(a, b, axis=1)
   np.testing.assert_allclose(np.array([[0], [2]]), out)
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_2(dtype):
   a = np.array([[0, 1, 2], [2, 3, 4]], dtype=dtype)
   b = np.array([[0, -2, 6, 2], [2, 3, 4, 4]], dtype=dtype)
@@ -220,14 +264,16 @@ def test_intersect_2(dtype):
   np.testing.assert_allclose(la, [0, 2])
   np.testing.assert_allclose(lb, [0, 3])
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_3(dtype):
   a = np.array([0, 1, 2, 3, 4], dtype=dtype)
   b = np.array([0, -1, 4], dtype=dtype)
   out = intersect(a, b)
   np.testing.assert_allclose([0, 4], out)
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_4(dtype):
   a = np.array([0, 1, 2, 3, 4], dtype=dtype)
   b = np.array([0, -1, 4], dtype=dtype)
@@ -235,6 +281,7 @@ def test_intersect_4(dtype):
   np.testing.assert_allclose([0, 4], out)
   np.testing.assert_allclose(la, [0, 4])
   np.testing.assert_allclose(lb, [0, 2])
+
 
 def test_intersect_raises():
   np.random.seed(10)
@@ -260,14 +307,16 @@ def test_intersect_raises():
   with pytest.raises(ValueError, match="array dtypes"):
     intersect(a, b, axis=0)
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_5(dtype):
   a = np.array([[0, 2], [1, 3], [2, 4]], dtype=dtype)
   b = np.array([[0, 2], [-2, 3], [6, 6]], dtype=dtype)
   out = intersect(a, b, axis=0)
   np.testing.assert_allclose(np.array([[0, 2]]), out)
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_6(dtype):
   a = np.array([[0, 2], [1, 3], [2, 4]], dtype=dtype)
   b = np.array([[0, 2], [-2, 3], [6, 4], [2, 4]], dtype=dtype)
@@ -277,7 +326,7 @@ def test_intersect_6(dtype):
   np.testing.assert_allclose(lb, [0, 3])
 
 
-@pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64])
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
 def test_intersect_1d(dtype):
   a = np.random.randint(-5, 5, 10, dtype=dtype)
   b = np.random.randint(-2, 2, 8, dtype=dtype)
@@ -286,6 +335,7 @@ def test_intersect_1d(dtype):
   np.testing.assert_allclose(out, out_)
   np.testing.assert_allclose(la, la_)
   np.testing.assert_allclose(lb, lb_)
+
 
 def test_intersect_ndarray_1():
   a = np.array([[0, 1, 2], [2, 3, 4]])
@@ -325,6 +375,7 @@ def test_intersect_ndarray_5():
   out = _intersect_ndarray(a, b, axis=0)
   np.testing.assert_allclose(np.array([[0, 2]]), out)
 
+
 def test_intersect_ndarray_6():
   a = np.array([[0, 2], [1, 3], [2, 4]])
   b = np.array([[0, 2], [-2, 3], [6, 4], [2, 4]])
@@ -332,6 +383,7 @@ def test_intersect_ndarray_6():
   np.testing.assert_allclose(np.array([[0, 2], [2, 4]]), out)
   np.testing.assert_allclose(la, [0, 2])
   np.testing.assert_allclose(lb, [0, 3])
+
 
 def test_intersect_ndarray_1d():
   a = np.random.randint(-5, 5, 10)
@@ -341,6 +393,7 @@ def test_intersect_ndarray_1d():
   np.testing.assert_allclose(out, out_)
   np.testing.assert_allclose(la, la_)
   np.testing.assert_allclose(lb, lb_)
+
 
 def test_intersect_ndarray_raises():
   np.random.seed(10)
@@ -358,6 +411,7 @@ def test_intersect_ndarray_raises():
   e = np.random.randint(0, 10, (3, 7, 3))
   with pytest.raises(NotImplementedError, match="_intersect_ndarray is only"):
     _intersect_ndarray(d, e, axis=1)
+
 
 def test_get_real_dtype():
   assert get_real_dtype(np.complex128) == np.float64

@@ -1,13 +1,18 @@
 """Tests for graphmode_tensornetwork."""
+
 import numpy as np
 import tensorflow as tf
-from tensornetwork import (contract, connect, flatten_edges_between,
-                           contract_between, Node)
+from tensornetwork import (
+  contract,
+  connect,
+  flatten_edges_between,
+  contract_between,
+  Node,
+)
 import pytest
 
 
 class GraphmodeTensorNetworkTest(tf.test.TestCase):
-
   def test_basic_graphmode(self):
     # pylint: disable=not-context-manager
     with tf.compat.v1.Graph().as_default():
@@ -96,7 +101,9 @@ class GraphmodeTensorNetworkTest(tf.test.TestCase):
     self.assertAllClose(f(x, tf.convert_to_tensor(2)), np.ones((2,)) * 12)
     self.assertAllClose(f(x, tf.convert_to_tensor(3)), np.ones((3,)) * 12)
 
-  def test_batch_usage(self,):
+  def test_batch_usage(
+    self,
+  ):
 
     def build_tensornetwork(tensors):
       a = Node(tensors[0], backend="tensorflow")
@@ -109,5 +116,5 @@ class GraphmodeTensorNetworkTest(tf.test.TestCase):
     np.testing.assert_allclose(result, np.ones(5) * 10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   tf.test.main()

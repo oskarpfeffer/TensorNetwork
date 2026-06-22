@@ -16,6 +16,7 @@
 These tests are based on `opt_einsum`s tests from
 github.com/dgasmith/opt_einsum/blob/master/opt_einsum/tests/test_paths.py
 """
+
 import numpy as np
 import opt_einsum
 import pytest
@@ -82,15 +83,15 @@ def matrix_chain():
 # Parametrize tests by giving:
 # (contraction algorithm, network, correct path that is expected)
 test_list = [
-    ("optimal", "gemm_network", [(0, 2), (0, 1)]),
-    ("branch", "gemm_network", [(0, 2), (0, 1)]),
-    ("greedy", "gemm_network", [(0, 2), (0, 1)]),
-    ("optimal", "inner_network", [(0, 1), (0, 1)]),
-    ("branch", "inner_network", [(0, 1), (0, 1)]),
-    ("greedy", "inner_network", [(0, 1), (0, 1)]),
-    ("optimal", "matrix_chain", [(2, 3), (1, 2), (0, 1)]),
-    ("branch", "matrix_chain", [(2, 3), (1, 2), (0, 1)]),
-    ("greedy", "matrix_chain", [(0, 1), (0, 2), (0, 1)]),
+  ("optimal", "gemm_network", [(0, 2), (0, 1)]),
+  ("branch", "gemm_network", [(0, 2), (0, 1)]),
+  ("greedy", "gemm_network", [(0, 2), (0, 1)]),
+  ("optimal", "inner_network", [(0, 1), (0, 1)]),
+  ("branch", "inner_network", [(0, 1), (0, 1)]),
+  ("greedy", "inner_network", [(0, 1), (0, 1)]),
+  ("optimal", "matrix_chain", [(2, 3), (1, 2), (0, 1)]),
+  ("branch", "matrix_chain", [(2, 3), (1, 2), (0, 1)]),
+  ("greedy", "matrix_chain", [(0, 1), (0, 2), (0, 1)]),
 ]
 
 

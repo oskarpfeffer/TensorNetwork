@@ -11,20 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#pyling: disable=line-too-long
+# pyling: disable=line-too-long
 from typing import Optional, Any, Sequence, Tuple, Callable, List, Text, Type
 from typing import Union
 from tensornetwork.backends import abstract_backend
 from tensornetwork.backends.symmetric import decompositions
 from tensornetwork.block_sparse.index import Index
-from tensornetwork.block_sparse.blocksparsetensor import (BlockSparseTensor,
-                                                          ChargeArray)
+from tensornetwork.block_sparse.blocksparsetensor import BlockSparseTensor, ChargeArray
 import warnings
 import scipy as sp
 import scipy.sparse.linalg
 import tensornetwork.block_sparse as bs
 import numpy
+
 Tensor = Any
+
 
 # pylint: disable=abstract-method
 class SymmetricBackend(abstract_backend.AbstractBackend):
@@ -35,8 +36,9 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     self.bs = bs
     self.name = "symmetric"
 
-  def tensordot(self, a: Tensor, b: Tensor,
-                axes: Union[int, Sequence[Sequence[int]]]) -> Tensor:
+  def tensordot(
+    self, a: Tensor, b: Tensor, axes: Union[int, Sequence[Sequence[int]]]
+  ) -> Tensor:
     return self.bs.tensordot(a, b, axes)
 
   def reshape(self, tensor: Tensor, shape: Tensor) -> Tensor:
@@ -48,21 +50,19 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     return self.bs.transpose(tensor, perm)
 
   def svd(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      max_singular_values: Optional[int] = None,
-      max_truncation_error: Optional[float] = None,
-      relative: Optional[bool] = False
+    self,
+    tensor: Tensor,
+    pivot_axis: int = -1,
+    max_singular_values: Optional[int] = None,
+    max_truncation_error: Optional[float] = None,
+    relative: Optional[bool] = False,
   ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
-    return decompositions.svd(self.bs, tensor, pivot_axis, max_singular_values,
-                              max_truncation_error, relative)
+    return decompositions.svd(
+      self.bs, tensor, pivot_axis, max_singular_values, max_truncation_error, relative
+    )
 
   def qr(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      non_negative_diagonal: bool = False
+    self, tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
   ) -> Tuple[Tensor, Tensor]:
     if non_negative_diagonal:
       errstr = "Can't specify non_negative_diagonal with BlockSparse."
@@ -70,10 +70,7 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     return decompositions.qr(self.bs, tensor, pivot_axis)
 
   def rq(
-      self,
-      tensor: Tensor,
-      pivot_axis: int = -1,
-      non_negative_diagonal: bool = False
+    self, tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
   ) -> Tuple[Tensor, Tensor]:
     if non_negative_diagonal:
       errstr = "Can't specify non_negative_diagonal with BlockSparse."
@@ -101,60 +98,59 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
   def convert_to_tensor(self, tensor: Tensor) -> Tensor:
     if numpy.isscalar(tensor):
       tensor = BlockSparseTensor(
-          data=tensor, charges=[], flows=[], order=[], check_consistency=False)
+        data=tensor, charges=[], flows=[], order=[], check_consistency=False
+      )
 
     if not isinstance(tensor, ChargeArray):
       raise TypeError(
-          "cannot convert tensor of type `{}` to `BlockSparseTensor`".format(
-              type(tensor)))
+        "cannot convert tensor of type `{}` to `BlockSparseTensor`".format(type(tensor))
+      )
     return tensor
 
   def outer_product(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     return self.bs.tensordot(tensor1, tensor2, 0)
 
-  def einsum(self,
-             expression: str,
-             *tensors: Tensor,
-             optimize: bool = True) -> Tensor:
+  def einsum(self, expression: str, *tensors: Tensor, optimize: bool = True) -> Tensor:
     raise NotImplementedError("`einsum` currently not implemented")
 
   def norm(self, tensor: Tensor) -> float:
     return self.bs.norm(tensor)
 
-  def eye(self,
-          N: Index,
-          dtype: Optional[numpy.dtype] = None,
-          M: Optional[Index] = None) -> Tensor:
+  def eye(
+    self, N: Index, dtype: Optional[numpy.dtype] = None, M: Optional[Index] = None
+  ) -> Tensor:
     dtype = dtype if dtype is not None else numpy.float64
 
     return self.bs.eye(N, M, dtype=dtype)
 
-  def ones(self,
-           shape: Sequence[Index],
-           dtype: Optional[numpy.dtype] = None) -> Tensor:
+  def ones(self, shape: Sequence[Index], dtype: Optional[numpy.dtype] = None) -> Tensor:
     dtype = dtype if dtype is not None else numpy.float64
     return self.bs.ones(shape, dtype=dtype)
 
-  def zeros(self,
-            shape: Sequence[Index],
-            dtype: Optional[numpy.dtype] = None) -> Tensor:
+  def zeros(
+    self, shape: Sequence[Index], dtype: Optional[numpy.dtype] = None
+  ) -> Tensor:
     dtype = dtype if dtype is not None else numpy.float64
     return self.bs.zeros(shape, dtype=dtype)
 
-  def randn(self,
-            shape: Sequence[Index],
-            dtype: Optional[numpy.dtype] = None,
-            seed: Optional[int] = None) -> Tensor:
+  def randn(
+    self,
+    shape: Sequence[Index],
+    dtype: Optional[numpy.dtype] = None,
+    seed: Optional[int] = None,
+  ) -> Tensor:
 
     if seed:
       numpy.random.seed(seed)
     return self.bs.randn(shape, dtype)
 
-  def random_uniform(self,
-                     shape: Sequence[Index],
-                     boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
-                     dtype: Optional[numpy.dtype] = None,
-                     seed: Optional[int] = None) -> Tensor:
+  def random_uniform(
+    self,
+    shape: Sequence[Index],
+    boundaries: Optional[Tuple[float, float]] = (0.0, 1.0),
+    dtype: Optional[numpy.dtype] = None,
+    seed: Optional[int] = None,
+  ) -> Tensor:
 
     if seed:
       numpy.random.seed(seed)
@@ -167,18 +163,20 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
   def eigh(self, matrix: Tensor) -> Tuple[Tensor, Tensor]:
     return self.bs.eigh(matrix)
 
-  def eigs(self,#pylint: disable=arguments-differ
-           A: Callable,
-           args: Optional[List] = None,
-           initial_state: Optional[Tensor] = None,
-           shape: Optional[Tuple[Index, ...]] = None,
-           dtype: Optional[Type[numpy.number]] = None,
-           num_krylov_vecs: int = 50,
-           numeig: int = 6,
-           tol: float = 1E-8,
-           which: Text = 'LR',
-           maxiter: Optional[int] = None,
-           enable_caching: bool = True) -> Tuple[Tensor, List]:
+  def eigs(
+    self,  # pylint: disable=arguments-differ
+    A: Callable,
+    args: Optional[List] = None,
+    initial_state: Optional[Tensor] = None,
+    shape: Optional[Tuple[Index, ...]] = None,
+    dtype: Optional[Type[numpy.number]] = None,
+    num_krylov_vecs: int = 50,
+    numeig: int = 6,
+    tol: float = 1e-8,
+    which: Text = "LR",
+    maxiter: Optional[int] = None,
+    enable_caching: bool = True,
+  ) -> Tuple[Tensor, List]:
     """
     Arnoldi method for finding the lowest eigenvector-eigenvalue pairs
     of a linear operator `A`.
@@ -224,36 +222,42 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     if args is None:
       args = []
 
-    if which in ('SI', 'LI'):
-      raise ValueError(f'which = {which} is currently not supported.')
+    if which in ("SI", "LI"):
+      raise ValueError(f"which = {which} is currently not supported.")
 
     if numeig + 1 >= num_krylov_vecs:
       raise ValueError("`num_krylov_vecs` > `numeig + 1` required")
 
     if initial_state is None:
       if (shape is None) or (dtype is None):
-        raise ValueError("if no `initial_state` is passed, then `shape` and"
-                         "`dtype` have to be provided")
+        raise ValueError(
+          "if no `initial_state` is passed, then `shape` and`dtype` have to be provided"
+        )
       initial_state = self.randn(shape, dtype)
 
     if not isinstance(initial_state, BlockSparseTensor):
-      raise TypeError("Expected a `BlockSparseTensor`. Got {}".format(
-          type(initial_state)))
-    
+      raise TypeError(
+        "Expected a `BlockSparseTensor`. Got {}".format(type(initial_state))
+      )
+
     initial_state.contiguous(inplace=True)
     dim = len(initial_state.data)
+
     def matvec(vector):
       tmp.data = vector
       res = A(tmp, *args)
       res.contiguous(inplace=True)
       return res.data
+
     tmp = BlockSparseTensor(
-        numpy.empty(0, dtype=initial_state.dtype),
-        initial_state._charges,
-        initial_state._flows,
-        check_consistency=False)
+      numpy.empty(0, dtype=initial_state.dtype),
+      initial_state._charges,
+      initial_state._flows,
+      check_consistency=False,
+    )
     lop = sp.sparse.linalg.LinearOperator(
-        dtype=initial_state.dtype, shape=(dim, dim), matvec=matvec)
+      dtype=initial_state.dtype, shape=(dim, dim), matvec=matvec
+    )
 
     former_caching_status = self.bs.get_caching_status()
     self.bs.set_caching_status(enable_caching)
@@ -261,25 +265,25 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
       cache_was_empty = self.bs.get_cacher().is_empty
     try:
       eta, U = sp.sparse.linalg.eigs(
-          A=lop,
-          k=numeig,
-          which=which,
-          v0=initial_state.data,
-          ncv=num_krylov_vecs,
-          tol=tol,
-          maxiter=maxiter)
+        A=lop,
+        k=numeig,
+        which=which,
+        v0=initial_state.data,
+        ncv=num_krylov_vecs,
+        tol=tol,
+        maxiter=maxiter,
+      )
     finally:
-      #set caching status back to what it was
+      # set caching status back to what it was
       self.bs.set_caching_status(former_caching_status)
       if enable_caching and cache_was_empty:
         self.bs.clear_cache()
 
     eVs = [
-        BlockSparseTensor(
-            U[:, n],
-            initial_state._charges,
-            initial_state._flows,
-            check_consistency=False) for n in range(numeig)
+      BlockSparseTensor(
+        U[:, n], initial_state._charges, initial_state._flows, check_consistency=False
+      )
+      for n in range(numeig)
     ]
 
     self.bs.set_caching_status(former_caching_status)
@@ -288,19 +292,21 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
 
     return eta, eVs
 
-  def eigsh_lanczos(self, #pylint: disable=arguments-differ
-                    A: Callable,
-                    args: Optional[List[Tensor]] = None,
-                    initial_state: Optional[Tensor] = None,
-                    shape: Optional[Tuple] = None,
-                    dtype: Optional[Type[numpy.number]] = None,
-                    num_krylov_vecs: int = 20,
-                    numeig: int = 1,
-                    tol: float = 1E-8,
-                    delta: float = 1E-8,
-                    ndiag: int = 20,
-                    reorthogonalize: bool = False,
-                    enable_caching: bool = True) -> Tuple[Tensor, List]:
+  def eigsh_lanczos(
+    self,  # pylint: disable=arguments-differ
+    A: Callable,
+    args: Optional[List[Tensor]] = None,
+    initial_state: Optional[Tensor] = None,
+    shape: Optional[Tuple] = None,
+    dtype: Optional[Type[numpy.number]] = None,
+    num_krylov_vecs: int = 20,
+    numeig: int = 1,
+    tol: float = 1e-8,
+    delta: float = 1e-8,
+    ndiag: int = 20,
+    reorthogonalize: bool = False,
+    enable_caching: bool = True,
+  ) -> Tuple[Tensor, List]:
     """
     Lanczos method for finding the lowest eigenvector-eigenvalue pairs
     of a linear operator `A`.
@@ -347,21 +353,24 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     if args is None:
       args = []
     if num_krylov_vecs < numeig:
-      raise ValueError('`num_krylov_vecs` >= `numeig` required!')
+      raise ValueError("`num_krylov_vecs` >= `numeig` required!")
 
     if numeig > 1 and not reorthogonalize:
       raise ValueError(
-          "Got numeig = {} > 1 and `reorthogonalize = False`. "
-          "Use `reorthogonalize=True` for `numeig > 1`".format(numeig))
+        "Got numeig = {} > 1 and `reorthogonalize = False`. "
+        "Use `reorthogonalize=True` for `numeig > 1`".format(numeig)
+      )
     if initial_state is None:
       if (shape is None) or (dtype is None):
-        raise ValueError("if no `initial_state` is passed, then `shape` and"
-                         "`dtype` have to be provided")
+        raise ValueError(
+          "if no `initial_state` is passed, then `shape` and`dtype` have to be provided"
+        )
       initial_state = self.randn(shape, dtype)
 
     if not isinstance(initial_state, BlockSparseTensor):
-      raise TypeError("Expected a `BlockSparseTensor`. Got {}".format(
-          type(initial_state)))
+      raise TypeError(
+        "Expected a `BlockSparseTensor`. Got {}".format(type(initial_state))
+      )
 
     former_caching_status = self.bs.get_caching_status()
     self.bs.set_caching_status(enable_caching)
@@ -393,8 +402,7 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
           for v in krylov_vecs:
             v.contiguous(inplace=True)  # make sure storage layouts are matching
             # it's save to operate on the tensor data now (pybass some checks)
-            vector_n.data -= numpy.dot(numpy.conj(v.data),
-                                       vector_n.data) * v.data
+            vector_n.data -= numpy.dot(numpy.conj(v.data), vector_n.data) * v.data
         krylov_vecs.append(vector_n)
         A_vector_n = A(vector_n, *args)
         A_vector_n.contiguous(inplace=True)  # contiguous memory layout
@@ -403,31 +411,33 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
         # this can be potentially problematic if vector_n and A_vector_n
         # have non-matching shapes due to an erroneous matvec.
         # If this is the case though an error will be thrown at line 281
-        diag_elements.append(
-            numpy.dot(numpy.conj(vector_n.data), A_vector_n.data))
+        diag_elements.append(numpy.dot(numpy.conj(vector_n.data), A_vector_n.data))
 
         if (it > 0) and (it % ndiag == 0) and (len(diag_elements) >= numeig):
           # diagonalize the effective Hamiltonian
-          A_tridiag = numpy.diag(diag_elements) + numpy.diag(
-              norms_vector_n[1:], 1) + numpy.diag(
-                  numpy.conj(norms_vector_n[1:]), -1)
+          A_tridiag = (
+            numpy.diag(diag_elements)
+            + numpy.diag(norms_vector_n[1:], 1)
+            + numpy.diag(numpy.conj(norms_vector_n[1:]), -1)
+          )
           eigvals, u = numpy.linalg.eigh(A_tridiag)
           if not first:
-            if numpy.linalg.norm(eigvals[0:numeig] -
-                                 eigvalsold[0:numeig]) < tol:
+            if numpy.linalg.norm(eigvals[0:numeig] - eigvalsold[0:numeig]) < tol:
               break
           first = False
           eigvalsold = eigvals[0:numeig]
         if it > 0:
-          A_vector_n -= (krylov_vecs[-1] * diag_elements[-1])
-          A_vector_n -= (krylov_vecs[-2] * norms_vector_n[-1])
+          A_vector_n -= krylov_vecs[-1] * diag_elements[-1]
+          A_vector_n -= krylov_vecs[-2] * norms_vector_n[-1]
         else:
-          A_vector_n -= (krylov_vecs[-1] * diag_elements[-1])
+          A_vector_n -= krylov_vecs[-1] * diag_elements[-1]
         vector_n = A_vector_n
 
-      A_tridiag = numpy.diag(diag_elements) + numpy.diag(
-          norms_vector_n[1:], 1) + numpy.diag(
-              numpy.conj(norms_vector_n[1:]), -1)
+      A_tridiag = (
+        numpy.diag(diag_elements)
+        + numpy.diag(norms_vector_n[1:], 1)
+        + numpy.diag(numpy.conj(norms_vector_n[1:]), -1)
+      )
       eigvals, u = numpy.linalg.eigh(A_tridiag)
       eigenvectors = []
       eigvals = numpy.array(eigvals).astype(A_tridiag.dtype)
@@ -447,19 +457,21 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
 
     return eigvals[0:numeig], eigenvectors
 
-  def gmres(self,#pylint: disable=arguments-differ
-            A_mv: Callable,
-            b: BlockSparseTensor,
-            A_args: Optional[List] = None,
-            A_kwargs: Optional[dict] = None,
-            x0: Optional[BlockSparseTensor] = None,
-            tol: float = 1E-05,
-            atol: Optional[float] = None,
-            num_krylov_vectors: Optional[int] = None,
-            maxiter: Optional[int] = 1,
-            M: Optional[Callable] = None,
-            enable_caching: bool = True) -> Tuple[BlockSparseTensor, int]:
-    """ GMRES solves the linear system A @ x = b for x given a vector `b` and
+  def gmres(
+    self,  # pylint: disable=arguments-differ
+    A_mv: Callable,
+    b: BlockSparseTensor,
+    A_args: Optional[List] = None,
+    A_kwargs: Optional[dict] = None,
+    x0: Optional[BlockSparseTensor] = None,
+    tol: float = 1e-05,
+    atol: Optional[float] = None,
+    num_krylov_vectors: Optional[int] = None,
+    maxiter: Optional[int] = 1,
+    M: Optional[Callable] = None,
+    enable_caching: bool = True,
+  ) -> Tuple[BlockSparseTensor, int]:
+    """GMRES solves the linear system A @ x = b for x given a vector `b` and
     a general (not necessarily symmetric/Hermitian) linear operator `A`.
 
     As a Krylov method, GMRES does not require a concrete matrix representation
@@ -504,12 +516,12 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
       x0: An optional guess solution. Zeros are used by default.
         If `x0` is supplied, its shape and dtype must match those of
         b`, or an error will be thrown. Default: zeros.
-      tol, atol: Solution tolerance to achieve, 
+      tol, atol: Solution tolerance to achieve,
         norm(residual) <= max(tol*norm(b), atol). Default: tol=1E-05
                           atol=tol
       num_krylov_vectors: Size of the Krylov space to build at each restart.
         Expense is cubic in this parameter. If supplied, it must be
-        an integer in 0 < num_krylov_vectors <= b.size. 
+        an integer in 0 < num_krylov_vectors <= b.size.
         Default: min(100, b.size).
       maxiter: The Krylov space will be repeatedly rebuilt up to this many
         times. Large values of this argument
@@ -522,13 +534,13 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
         numpy backend. Supplying this argument to other backends will
         trigger NotImplementedError. Default: None.
       enable_caching: If `True`, block-data during calls to `matvec` is cached
-        for later reuse. Note: usually it is safe to enable_caching, unless 
+        for later reuse. Note: usually it is safe to enable_caching, unless
         `matvec` uses matrix decompositions like SVD, QR, eigh, eig or similar.
-        In this case, if one does a large number of krylov steps, this can lead 
+        In this case, if one does a large number of krylov steps, this can lead
         to memory clutter and/or OOM errors.
     Raises:
       ValueError: -if `x0` is supplied but its shape differs from that of `b`.
-                  -if the ARPACK solver reports a breakdown (which usually 
+                  -if the ARPACK solver reports a breakdown (which usually
                    indicates some kind of floating point issue).
                   -if num_krylov_vectors is 0 or exceeds b.size.
                   -if tol was negative.
@@ -543,20 +555,20 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
       x0 = self.bs.randn_like(b)
 
     if not self.bs.compare_shapes(x0, b):
-      errstring = (f"x0.sparse_shape = \n{x0.sparse_shape} \ndoes not match "
-                   f"b.sparse_shape = \n{b.sparse_shape}.")
+      errstring = (
+        f"x0.sparse_shape = \n{x0.sparse_shape} \ndoes not match "
+        f"b.sparse_shape = \n{b.sparse_shape}."
+      )
       raise ValueError(errstring)
 
     if x0.dtype != b.dtype:
-      raise TypeError(f"x0.dtype = {x0.dtype} does not"
-                      f" match b.dtype = {b.dtype}")
+      raise TypeError(f"x0.dtype = {x0.dtype} does not match b.dtype = {b.dtype}")
 
     if num_krylov_vectors is None:
       num_krylov_vectors = min(b.size, 100)
 
     if num_krylov_vectors <= 0 or num_krylov_vectors > b.size:
-      errstring = (f"num_krylov_vectors must be in "
-                   f"0 < {num_krylov_vectors} <= {b.size}.")
+      errstring = f"num_krylov_vectors must be in 0 < {num_krylov_vectors} <= {b.size}."
       raise ValueError(errstring)
     if tol < 0:
       raise ValueError(f"tol = {tol} must be positive.")
@@ -574,10 +586,9 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
     x0.contiguous(inplace=True)
     b.contiguous(inplace=True)
     tmp = BlockSparseTensor(
-        numpy.empty(0, dtype=x0.dtype),
-        x0._charges,
-        x0._flows,
-        check_consistency=False)
+      numpy.empty(0, dtype=x0.dtype), x0._charges, x0._flows, check_consistency=False
+    )
+
     def matvec(vector):
       tmp.data = vector
       res = A_mv(tmp, *A_args, **A_kwargs)
@@ -586,7 +597,8 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
 
     dim = len(x0.data)
     A_op = sp.sparse.linalg.LinearOperator(
-        dtype=x0.dtype, shape=(dim, dim), matvec=matvec)
+      dtype=x0.dtype, shape=(dim, dim), matvec=matvec
+    )
 
     former_caching_status = self.bs.get_caching_status()
     self.bs.set_caching_status(enable_caching)
@@ -594,20 +606,21 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
       cache_was_empty = self.bs.get_cacher().is_empty
     try:
       x, info = sp.sparse.linalg.gmres(
-          A_op,
-          b.data,
-          x0.data,
-          tol=tol,
-          atol=atol,
-          restart=num_krylov_vectors,
-          maxiter=maxiter,
-          M=M)
+        A_op,
+        b.data,
+        x0.data,
+        tol=tol,
+        atol=atol,
+        restart=num_krylov_vectors,
+        maxiter=maxiter,
+        M=M,
+      )
     finally:
-      #set caching status back to what it was
+      # set caching status back to what it was
       self.bs.set_caching_status(former_caching_status)
       if enable_caching and cache_was_empty:
         self.bs.clear_cache()
-    
+
     if info < 0:
       raise ValueError("ARPACK gmres received illegal input or broke down.")
     if info > 0:
@@ -629,23 +642,28 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
 
   def inv(self, matrix: Tensor) -> Tensor:
     if len(matrix.shape) > 2:
-      raise ValueError("input to symmetric backend method `inv` has shape {}."
-                       " Only matrices are supported.".format(matrix.shape))
+      raise ValueError(
+        "input to symmetric backend method `inv` has shape {}."
+        " Only matrices are supported.".format(matrix.shape)
+      )
     return self.bs.inv(matrix)
 
-  def broadcast_right_multiplication(self, tensor1: Tensor,
-                                     tensor2: Tensor) -> Tensor:
+  def broadcast_right_multiplication(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     if tensor2.ndim != 1:
-      raise ValueError("only order-1 tensors are allowed for `tensor2`,"
-                       " found `tensor2.shape = {}`".format(tensor2.shape))
-    return self.tensordot(tensor1, self.diagflat(tensor2),
-                          ([len(tensor1.shape) - 1], [0]))
+      raise ValueError(
+        "only order-1 tensors are allowed for `tensor2`,"
+        " found `tensor2.shape = {}`".format(tensor2.shape)
+      )
+    return self.tensordot(
+      tensor1, self.diagflat(tensor2), ([len(tensor1.shape) - 1], [0])
+    )
 
-  def broadcast_left_multiplication(self, tensor1: Tensor,
-                                    tensor2: Tensor) -> Tensor:
+  def broadcast_left_multiplication(self, tensor1: Tensor, tensor2: Tensor) -> Tensor:
     if len(tensor1.shape) != 1:
-      raise ValueError("only order-1 tensors are allowed for `tensor1`,"
-                       " found `tensor1.shape = {}`".format(tensor1.shape))
+      raise ValueError(
+        "only order-1 tensors are allowed for `tensor1`,"
+        " found `tensor1.shape = {}`".format(tensor1.shape)
+      )
     return self.tensordot(self.diagflat(tensor1), tensor2, ([1], [0]))
 
   def jit(self, fun: Callable, *args: List, **kwargs: dict) -> Callable:
@@ -656,15 +674,17 @@ class SymmetricBackend(abstract_backend.AbstractBackend):
       raise NotImplementedError("Can't specify k with Symmetric backend")
     return self.bs.diag(tensor)
 
-  def diagonal(self, tensor: Tensor, offset: int = 0, axis1: int = -2,
-               axis2: int = -1) -> Tensor:
+  def diagonal(
+    self, tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1
+  ) -> Tensor:
     if axis1 != -2 or axis2 != -1 or offset != 0:
       errstr = "offset, axis1, axis2 unsupported by Symmetric backend."
       raise NotImplementedError(errstr)
     return self.bs.diag(tensor)
 
-  def trace(self, tensor: Tensor, offset: int = 0, axis1: int = -2,
-            axis2: int = -1) -> Tensor:
+  def trace(
+    self, tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1
+  ) -> Tensor:
     # Default np.trace uses first two axes.
     if offset != 0:
       errstr = f"offset = {offset} must be 0 with Symmetric backend."

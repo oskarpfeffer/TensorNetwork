@@ -24,8 +24,11 @@ np_dtypes = [np.float32, np.float64, np.complex64, np.complex128, np.int32]
 tf_dtypes = [tf.float32, tf.float64, tf.complex64, tf.complex128, tf.int32]
 torch_dtypes = [torch.float32, torch.float64, torch.int32, torch.int64]
 jax_dtypes = [
-    jax.numpy.float32, jax.numpy.float64, jax.numpy.complex64,
-    jax.numpy.complex128, jax.numpy.int32
+  jax.numpy.float32,
+  jax.numpy.float64,
+  jax.numpy.complex64,
+  jax.numpy.complex128,
+  jax.numpy.int32,
 ]
 
 
@@ -56,12 +59,11 @@ def test_add_node_names(backend):
 
 
 def test_add_copy_node_from_node_object(backend):
-  a = tn.CopyNode(
-      3, 3, name="TestName", axis_names=['a', 'b', 'c'], backend=backend)
+  a = tn.CopyNode(3, 3, name="TestName", axis_names=["a", "b", "c"], backend=backend)
   assert a.shape == (3, 3, 3)
   assert isinstance(a, tn.CopyNode)
   assert a.name == "TestName"
-  assert a.axis_names == ['a', 'b', 'c']
+  assert a.axis_names == ["a", "b", "c"]
   b = tn.Node(np.eye(3), backend=backend)
   e = a[0] ^ b[0]
   c = tn.contract(e)
@@ -70,13 +72,11 @@ def test_add_copy_node_from_node_object(backend):
 
 def test_copy_node_method(backend):
   a = tn.Node(
-      np.ones([3, 3, 3]),
-      name='mynode',
-      axis_names=['a', 'b', 'c'],
-      backend=backend)
-  a.add_edge(tn.Edge(a, 0, name='named_edge1'), 0)
-  a.add_edge(tn.Edge(a, 1, name='named_edge2'), 1)
-  a.add_edge(tn.Edge(a, 2, name='named_edge3'), 2)
+    np.ones([3, 3, 3]), name="mynode", axis_names=["a", "b", "c"], backend=backend
+  )
+  a.add_edge(tn.Edge(a, 0, name="named_edge1"), 0)
+  a.add_edge(tn.Edge(a, 1, name="named_edge2"), 1)
+  a.add_edge(tn.Edge(a, 2, name="named_edge3"), 2)
   b = a.copy()
   assert a.name == b.name
   assert a.shape == b.shape
@@ -87,10 +87,10 @@ def test_copy_node_method(backend):
 
 
 def test_copy_copynode_method(backend):
-  a = tn.CopyNode(3, 3, 'mynode', axis_names=['a', 'b', 'c'], backend=backend)
-  a.add_edge(tn.Edge(a, 0, name='named_edge1'), 0)
-  a.add_edge(tn.Edge(a, 1, name='named_edge2'), 1)
-  a.add_edge(tn.Edge(a, 2, name='named_edge3'), 2)
+  a = tn.CopyNode(3, 3, "mynode", axis_names=["a", "b", "c"], backend=backend)
+  a.add_edge(tn.Edge(a, 0, name="named_edge1"), 0)
+  a.add_edge(tn.Edge(a, 1, name="named_edge2"), 1)
+  a.add_edge(tn.Edge(a, 2, name="named_edge3"), 2)
   b = a.copy()
   assert a.name == b.name
   assert a.shape == b.shape
@@ -105,15 +105,16 @@ def test_copy_copynode_method(backend):
 
 def test_copy_method_with_trace_edges(backend):
   a = tn.Node(
-      np.ones([3, 3, 3, 3, 3]),
-      name='mynode',
-      axis_names=['a', 'b', 'c', 'd', 'e'],
-      backend=backend)
-  a.add_edge(tn.Edge(a, 0, name='named_edge1'), 0)
-  a.add_edge(tn.Edge(a, 1, name='named_edge2'), 1)
-  a.add_edge(tn.Edge(a, 2, name='named_edge3'), 2)
-  a.add_edge(tn.Edge(a, 3, name='named_edge4'), 3)
-  a.add_edge(tn.Edge(a, 4, name='named_edge5'), 4)
+    np.ones([3, 3, 3, 3, 3]),
+    name="mynode",
+    axis_names=["a", "b", "c", "d", "e"],
+    backend=backend,
+  )
+  a.add_edge(tn.Edge(a, 0, name="named_edge1"), 0)
+  a.add_edge(tn.Edge(a, 1, name="named_edge2"), 1)
+  a.add_edge(tn.Edge(a, 2, name="named_edge3"), 2)
+  a.add_edge(tn.Edge(a, 3, name="named_edge4"), 3)
+  a.add_edge(tn.Edge(a, 4, name="named_edge5"), 4)
   a[0] ^ a[3]
   a[1] ^ a[4]
   b = a.copy()
@@ -372,8 +373,7 @@ def test_complicated_edge_reordering(backend):
 
 
 def test_edge_reorder_axis_names(backend):
-  a = tn.Node(
-      np.zeros((2, 3, 4, 5)), axis_names=["a", "b", "c", "d"], backend=backend)
+  a = tn.Node(np.zeros((2, 3, 4, 5)), axis_names=["a", "b", "c", "d"], backend=backend)
   edge_a = a["a"]
   edge_b = a["b"]
   edge_c = a["c"]
@@ -384,8 +384,7 @@ def test_edge_reorder_axis_names(backend):
 
 
 def test_add_axis_names(backend):
-  a = tn.Node(
-      np.eye(2), name="A", axis_names=["ignore1", "ignore2"], backend=backend)
+  a = tn.Node(np.eye(2), name="A", axis_names=["ignore1", "ignore2"], backend=backend)
   a.add_axis_names(["a", "b"])
   assert a.axis_names == ["a", "b"]
 
@@ -507,12 +506,10 @@ def test_contract_between_output_order(backend):
   tn.connect(b[1], a[3])
   tn.connect(a[1], b[0])
   with pytest.raises(ValueError):
-    d = tn.contract_between(
-        a, b, name="New Node", output_edge_order=[a[2], b[2], a[0]])
+    d = tn.contract_between(a, b, name="New Node", output_edge_order=[a[2], b[2], a[0]])
   tn.check_correct({a, b, c}, check_connections=False)
   with pytest.raises(ValueError):
-    d = tn.contract_between(
-        a, b, name="New Node", output_edge_order=[a[2], b[2], c[0]])
+    d = tn.contract_between(a, b, name="New Node", output_edge_order=[a[2], b[2], c[0]])
   tn.check_correct({a, b, c}, check_connections=False)
   d = tn.contract_between(a, b, name="New Node", output_edge_order=[b[2], a[2]])
   tn.check_correct({c, d}, check_connections=False)
@@ -612,9 +609,9 @@ def test_copy_tensor(backend):
 
 
 # Include 'tensorflow' (by removing the decorator) once #87 is fixed.
-@pytest.mark.parametrize('backend', ('numpy', 'jax'))
+@pytest.mark.parametrize("backend", ("numpy", "jax"))
 def test_copy_tensor_parallel_edges(backend):
-  a = tn.Node(np.diag([1., 2, 3]), backend=backend)
+  a = tn.Node(np.diag([1.0, 2, 3]), backend=backend)
   b = tn.Node(np.array([10, 20, 30], dtype=np.float64), backend=backend)
   cn = tn.CopyNode(rank=3, dimension=3, backend=backend)
   edge1 = tn.connect(a[0], cn[0])
@@ -660,9 +657,8 @@ def test_bad_backend():
 
 def test_remove_node(backend):
   a = tn.Node(
-      np.ones((2, 2, 2)),
-      axis_names=["test", "names", "ignore"],
-      backend=backend)
+    np.ones((2, 2, 2)), axis_names=["test", "names", "ignore"], backend=backend
+  )
   b = tn.Node(np.ones((2, 2)), backend=backend)
   c = tn.Node(np.ones((2, 2)), backend=backend)
   tn.connect(a["test"], b[0])
@@ -722,7 +718,6 @@ def test_remove_after_flatten(backend):
 def test_custom_backend():
   # pylint: disable=abstract-method
   class StringBackend(tn.AbstractBackend):
-
     def __init__(self):
       super().__init__()
       self.name = "string_backend"

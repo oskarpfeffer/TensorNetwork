@@ -18,17 +18,17 @@ import numpy as np
 
 
 def assert_nodes_eq(a, b):
-  assert type(a) == type(b)  #pylint: disable=unidiomatic-typecheck
-  assert getattr(a, 'name', None) == getattr(b, 'name', None)
-  assert getattr(a, 'axis_names', None) == getattr(b, 'axis_names', None)
-  assert getattr(a, 'backend', None) == getattr(b, 'backend', None)
-  assert getattr(a, 'shape', None) == getattr(b, 'shape', None)
-  assert getattr(a, 'rank', None) == getattr(b, 'rank', None)
-  assert getattr(a, 'dtype', None) == getattr(b, 'dtype', None)
-  assert getattr(a, 'dimension', None) == getattr(b, 'dimension', None)
-  ta = getattr(a, 'tensor', None)
+  assert type(a) == type(b)  # pylint: disable=unidiomatic-typecheck
+  assert getattr(a, "name", None) == getattr(b, "name", None)
+  assert getattr(a, "axis_names", None) == getattr(b, "axis_names", None)
+  assert getattr(a, "backend", None) == getattr(b, "backend", None)
+  assert getattr(a, "shape", None) == getattr(b, "shape", None)
+  assert getattr(a, "rank", None) == getattr(b, "rank", None)
+  assert getattr(a, "dtype", None) == getattr(b, "dtype", None)
+  assert getattr(a, "dimension", None) == getattr(b, "dimension", None)
+  ta = getattr(a, "tensor", None)
   if isinstance(ta, np.ndarray):
-    assert (ta == getattr(b, 'tensor', None)).all()
+    assert (ta == getattr(b, "tensor", None)).all()
 
 
 def assert_edges_eq(a, b):
@@ -47,22 +47,21 @@ def assert_graphs_eq(a_nodes, b_nodes):
   for a, b in zip(a_nodes, b_nodes):
     for e1, e2 in zip(a.edges, b.edges):
       assert_edges_eq(e1, e2)
-      assert a_nodes_dict.get(e1.node2,
-                              None) == b_nodes_dict.get(e2.node2, None)
+      assert a_nodes_dict.get(e1.node2, None) == b_nodes_dict.get(e2.node2, None)
 
 
 def create_basic_network():
   np.random.seed(10)
-  a = tn.Node(np.random.normal(size=[8]), name='an', axis_names=['a1'])
-  b = tn.Node(np.random.normal(size=[8, 8, 8]),
-              name='bn',
-              axis_names=['b1', 'b2', 'b3'])
-  c = tn.Node(np.random.normal(size=[8, 8, 8]),
-              name='cn',
-              axis_names=['c1', 'c2', 'c3'])
-  d = tn.Node(np.random.normal(size=[8, 8, 8]),
-              name='dn',
-              axis_names=['d1', 'd2', 'd3'])
+  a = tn.Node(np.random.normal(size=[8]), name="an", axis_names=["a1"])
+  b = tn.Node(
+    np.random.normal(size=[8, 8, 8]), name="bn", axis_names=["b1", "b2", "b3"]
+  )
+  c = tn.Node(
+    np.random.normal(size=[8, 8, 8]), name="cn", axis_names=["c1", "c2", "c3"]
+  )
+  d = tn.Node(
+    np.random.normal(size=[8, 8, 8]), name="dn", axis_names=["d1", "d2", "d3"]
+  )
 
   a[0] ^ b[0]
   b[1] ^ c[0]
@@ -102,17 +101,17 @@ def test_exlcuded_node_serial():
 def test_serial_with_bindings():
   a, b, c, d = create_basic_network()
   bindings = {}
-  a[0].name = 'ea0'
-  bindings['ea'] = a[0]
-  for s, n in zip(['eb', 'ec', 'ed'], [b, c, d]):
+  a[0].name = "ea0"
+  bindings["ea"] = a[0]
+  for s, n in zip(["eb", "ec", "ed"], [b, c, d]):
     for i, e in enumerate(n.edges):
       e.name = s + str(i)
       bindings[s] = bindings.get(s, ()) + (e,)
   s = tn.nodes_to_json([a, b, c, d], edge_binding=bindings)
   _, new_bindings = tn.nodes_from_json(s)
   assert len(new_bindings) == len(bindings)
-  assert bindings['ea'].name == new_bindings['ea'][0].name
-  for k in ['eb', 'ec', 'ed']:
+  assert bindings["ea"].name == new_bindings["ea"][0].name
+  for k in ["eb", "ec", "ed"]:
     new_names = {e.name for e in new_bindings[k]}
     names = {e.name for e in bindings[k]}
     assert names == new_names
@@ -129,16 +128,16 @@ def test_serial_non_str_keys():
 def test_serial_non_edge_values():
   a, b, c, d = create_basic_network()
   bindings = {}
-  bindings['non_edge'] = a
+  bindings["non_edge"] = a
   with pytest.raises(TypeError):
     _ = tn.nodes_to_json([a, b, c, d], edge_binding=bindings)
 
 
 def test_serial_exclude_non_network_edges():
-  a, b, c, d = create_basic_network() # pylint: disable=unused-variable
-  bindings = {'include': a[0], 'boundary': b[1], 'exclude': d[0]}
+  a, b, c, d = create_basic_network()  # pylint: disable=unused-variable
+  bindings = {"include": a[0], "boundary": b[1], "exclude": d[0]}
   s = tn.nodes_to_json([a, b], edge_binding=bindings)
   nodes, new_bindings = tn.nodes_from_json(s)
   assert len(nodes) == 2
-  assert 'include' in new_bindings and 'boundary' in new_bindings
-  assert 'exclude' not in new_bindings
+  assert "include" in new_bindings and "boundary" in new_bindings
+  assert "exclude" not in new_bindings

@@ -3,14 +3,15 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import activations, initializers, regularizers
 from tensorflow.keras.layers import Layer
-from tensorflow.python.keras.utils import conv_utils #pylint: disable=no-name-in-module
+from tensorflow.python.keras.utils import conv_utils  # pylint: disable=no-name-in-module
 from typing import List, Tuple, Text, Optional, Union
 import numpy as np
 import tensornetwork as tn
 import math
 
+
 # pytype: disable=module-attr
-@tf.keras.utils.register_keras_serializable(package='tensornetwork')# pylint: disable=no-member
+@tf.keras.utils.register_keras_serializable(package="tensornetwork")  # pylint: disable=no-member
 # pytype: enable=module-attr
 class Conv2DMPO(Layer):
   """2D Convolutional Matrix Product Operator (MPO) TN layer.
@@ -89,43 +90,45 @@ class Conv2DMPO(Layer):
   Output shape:
     4D tensor with shape: `(batch_size, h_out, w_out, filters)`.
   """
-  def __init__(self,
-               filters: int,
-               kernel_size: Union[int, Tuple[int, int]],
-               num_nodes: int,
-               bond_dim: int,
-               strides: Union[int, Tuple[int, int]] = 1,
-               padding: Text = "same",
-               data_format: Optional[Text] = "channels_last",
-               dilation_rate: Union[int, Tuple[int, int]] = (1, 1),
-               activation: Optional[Text] = None,
-               use_bias: bool = True,
-               kernel_initializer: Text = "glorot_uniform",
-               bias_initializer: Text = "zeros",
-               kernel_regularizer: Optional[Text] = None,
-               bias_regularizer: Optional[Text] = None,
-               **kwargs) -> None:
-    if num_nodes < 2:
-      raise ValueError('Need at least 2 nodes to create MPO')
 
-    if padding not in ('same', 'valid'):
+  def __init__(
+    self,
+    filters: int,
+    kernel_size: Union[int, Tuple[int, int]],
+    num_nodes: int,
+    bond_dim: int,
+    strides: Union[int, Tuple[int, int]] = 1,
+    padding: Text = "same",
+    data_format: Optional[Text] = "channels_last",
+    dilation_rate: Union[int, Tuple[int, int]] = (1, 1),
+    activation: Optional[Text] = None,
+    use_bias: bool = True,
+    kernel_initializer: Text = "glorot_uniform",
+    bias_initializer: Text = "zeros",
+    kernel_regularizer: Optional[Text] = None,
+    bias_regularizer: Optional[Text] = None,
+    **kwargs,
+  ) -> None:
+    if num_nodes < 2:
+      raise ValueError("Need at least 2 nodes to create MPO")
+
+    if padding not in ("same", "valid"):
       raise ValueError('Padding must be "same" or "valid"')
 
-    if data_format not in ['channels_first', 'channels_last']:
-      raise ValueError('Invalid data_format string provided')
+    if data_format not in ["channels_first", "channels_last"]:
+      raise ValueError("Invalid data_format string provided")
 
     super().__init__(**kwargs)
 
     self.nodes = []
     self.filters = filters
-    self.kernel_size = conv_utils.normalize_tuple(kernel_size, 2, 'kernel_size')
+    self.kernel_size = conv_utils.normalize_tuple(kernel_size, 2, "kernel_size")
     self.num_nodes = num_nodes
     self.bond_dim = bond_dim
-    self.strides = conv_utils.normalize_tuple(strides, 2, 'kernel_size')
+    self.strides = conv_utils.normalize_tuple(strides, 2, "kernel_size")
     self.padding = padding
     self.data_format = data_format
-    self.dilation_rate = conv_utils.normalize_tuple(dilation_rate,
-                                                    2, 'dilation_rate')
+    self.dilation_rate = conv_utils.normalize_tuple(dilation_rate, 2, "dilation_rate")
     self.activation = activations.get(activation)
     self.use_bias = use_bias
     self.kernel_initializer = initializers.get(kernel_initializer)
@@ -136,72 +139,80 @@ class Conv2DMPO(Layer):
   def build(self, input_shape: List[int]) -> None:
     # Disable the attribute-defined-outside-init violations in this function
     # pylint: disable=attribute-defined-outside-init
-    if self.data_format == 'channels_first':
+    if self.data_format == "channels_first":
       channel_axis = 1
     else:
       channel_axis = -1
     if input_shape[channel_axis] is None:
-      raise ValueError('The channel dimension of the inputs '
-                       'should be defined. Found `None`.')
+      raise ValueError(
+        "The channel dimension of the inputs should be defined. Found `None`."
+      )
 
     def is_perfect_root(n, n_nodes):
-      root = n**(1. / n_nodes)
-      return round(root)**n_nodes == n
+      root = n ** (1.0 / n_nodes)
+      return round(root) ** n_nodes == n
 
     channels = input_shape[channel_axis]
 
     # Ensure dividable dimensions
     assert is_perfect_root(channels, self.num_nodes), (
-        f'Input dim incorrect. '
-        f'{input_shape[-1]}**(1. / {self.num_nodes}) must be round.')
+      f"Input dim incorrect. {input_shape[-1]}**(1. / {self.num_nodes}) must be round."
+    )
 
     assert is_perfect_root(self.filters, self.num_nodes), (
-        f'Output dim incorrect. '
-        f'{self.filters}**(1. / {self.num_nodes}) must be round.')
+      f"Output dim incorrect. {self.filters}**(1. / {self.num_nodes}) must be round."
+    )
 
     super().build(input_shape)
 
-    in_leg_dim = math.ceil(channels**(1. / self.num_nodes))
-    out_leg_dim = math.ceil(self.filters**(1. / self.num_nodes))
+    in_leg_dim = math.ceil(channels ** (1.0 / self.num_nodes))
+    out_leg_dim = math.ceil(self.filters ** (1.0 / self.num_nodes))
 
     self.nodes.append(
-        self.add_weight(name='end_node_first',
-                        shape=(in_leg_dim, self.kernel_size[0],
-                               self.bond_dim, out_leg_dim),
-                        trainable=True,
-                        initializer=self.kernel_initializer,
-                        regularizer=self.kernel_regularizer))
+      self.add_weight(
+        name="end_node_first",
+        shape=(in_leg_dim, self.kernel_size[0], self.bond_dim, out_leg_dim),
+        trainable=True,
+        initializer=self.kernel_initializer,
+        regularizer=self.kernel_regularizer,
+      )
+    )
     for i in range(self.num_nodes - 2):
       self.nodes.append(
-          self.add_weight(name=f'middle_node_{i}',
-                          shape=(in_leg_dim, self.bond_dim, self.bond_dim,
-                                 out_leg_dim),
-                          trainable=True,
-                          initializer=self.kernel_initializer,
-                          regularizer=self.kernel_regularizer))
+        self.add_weight(
+          name=f"middle_node_{i}",
+          shape=(in_leg_dim, self.bond_dim, self.bond_dim, out_leg_dim),
+          trainable=True,
+          initializer=self.kernel_initializer,
+          regularizer=self.kernel_regularizer,
+        )
+      )
     self.nodes.append(
-        self.add_weight(name='end_node_last',
-                        shape=(in_leg_dim, self.bond_dim,
-                               self.kernel_size[1], out_leg_dim),
-                        trainable=True,
-                        initializer=self.kernel_initializer,
-                        regularizer=self.kernel_regularizer))
+      self.add_weight(
+        name="end_node_last",
+        shape=(in_leg_dim, self.bond_dim, self.kernel_size[1], out_leg_dim),
+        trainable=True,
+        initializer=self.kernel_initializer,
+        regularizer=self.kernel_regularizer,
+      )
+    )
 
     if self.use_bias:
       self.bias_var = self.add_weight(
-          name='bias',
-          shape=(self.filters,),
-          trainable=True,
-          initializer=self.bias_initializer,
-          regularizer=self.bias_regularizer)
+        name="bias",
+        shape=(self.filters,),
+        trainable=True,
+        initializer=self.bias_initializer,
+        regularizer=self.bias_regularizer,
+      )
     else:
       self.use_bias = None
 
-  def call(self, inputs: tf.Tensor) -> tf.Tensor: #pylint: disable=arguments-differ
+  def call(self, inputs: tf.Tensor) -> tf.Tensor:  # pylint: disable=arguments-differ
 
-    tn_nodes = [tn.Node(n, backend='tensorflow') for n in self.nodes]
+    tn_nodes = [tn.Node(n, backend="tensorflow") for n in self.nodes]
     for i in range(len(tn_nodes) - 1):
-      tn_nodes[i][2] ^ tn_nodes[i+1][1]
+      tn_nodes[i][2] ^ tn_nodes[i + 1][1]
     input_edges = [n[0] for n in tn_nodes]
     output_edges = [n[3] for n in tn_nodes]
     edges = [tn_nodes[0][1], tn_nodes[-1][2]] + input_edges + output_edges
@@ -210,57 +221,65 @@ class Conv2DMPO(Layer):
     tn.flatten_edges(input_edges)
     tn.flatten_edges(output_edges)
 
-    tf_df = 'NCHW' if self.data_format == 'channels_first' else 'NHWC'
-    result = tf.nn.conv2d(inputs,
-                          contracted.tensor,
-                          self.strides,
-                          self.padding.upper(),
-                          data_format=tf_df,
-                          dilations=self.dilation_rate)
+    tf_df = "NCHW" if self.data_format == "channels_first" else "NHWC"
+    result = tf.nn.conv2d(
+      inputs,
+      contracted.tensor,
+      self.strides,
+      self.padding.upper(),
+      data_format=tf_df,
+      dilations=self.dilation_rate,
+    )
 
     if self.use_bias:
-      bias = tf.reshape(self.bias_var, (1, self.filters,))
+      bias = tf.reshape(
+        self.bias_var,
+        (
+          1,
+          self.filters,
+        ),
+      )
       result += bias
 
     if self.activation is not None:
       result = self.activation(result)
     return result
 
-  def compute_output_shape(self, input_shape: List[int]) -> Tuple[
-      int, int, int, int]:
-    if self.data_format == 'channels_first':
+  def compute_output_shape(self, input_shape: List[int]) -> Tuple[int, int, int, int]:
+    if self.data_format == "channels_first":
       space = input_shape[2:]
     else:
       space = input_shape[1:-1]
     new_space = []
     for i, _ in enumerate(space):
       new_dim = conv_utils.conv_output_length(
-          space[i],
-          self.kernel_size[i],
-          padding=self.padding,
-          stride=self.strides[i],
-          dilation=self.dilation_rate[i])
+        space[i],
+        self.kernel_size[i],
+        padding=self.padding,
+        stride=self.strides[i],
+        dilation=self.dilation_rate[i],
+      )
       new_space.append(new_dim)
-    if self.data_format == 'channels_first':
+    if self.data_format == "channels_first":
       return (input_shape[0], self.filters) + tuple(new_space)
     return (input_shape[0],) + tuple(new_space) + (self.filters,)
 
   def get_config(self) -> dict:
     config = {
-        'filters': self.filters,
-        'kernel_size': self.kernel_size,
-        'num_nodes': self.num_nodes,
-        'bond_dim': self.bond_dim,
-        'strides': self.strides,
-        'padding': self.padding,
-        'data_format': self.data_format,
-        'dilation_rate': self.dilation_rate,
-        'activation': activations.serialize(self.activation),
-        'use_bias': self.use_bias,
-        'kernel_initializer': initializers.serialize(self.kernel_initializer),
-        'bias_initializer': initializers.serialize(self.bias_initializer),
-        'kernel_regularizer': regularizers.serialize(self.kernel_regularizer),
-        'bias_regularizer': regularizers.serialize(self.bias_regularizer),
+      "filters": self.filters,
+      "kernel_size": self.kernel_size,
+      "num_nodes": self.num_nodes,
+      "bond_dim": self.bond_dim,
+      "strides": self.strides,
+      "padding": self.padding,
+      "data_format": self.data_format,
+      "dilation_rate": self.dilation_rate,
+      "activation": activations.serialize(self.activation),
+      "use_bias": self.use_bias,
+      "kernel_initializer": initializers.serialize(self.kernel_initializer),
+      "bias_initializer": initializers.serialize(self.bias_initializer),
+      "kernel_regularizer": regularizers.serialize(self.kernel_regularizer),
+      "bias_regularizer": regularizers.serialize(self.bias_regularizer),
     }
     base_config = super().get_config()
     config.update(base_config)

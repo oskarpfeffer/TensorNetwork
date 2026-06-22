@@ -22,8 +22,9 @@ class Index:
   An index class to store indices of a symmetric tensor.
   """
 
-  def __init__(self, charges: Union[List[BaseCharge], BaseCharge],
-               flow: Union[List[bool], bool]) -> None:
+  def __init__(
+    self, charges: Union[List[BaseCharge], BaseCharge], flow: Union[List[bool], bool]
+  ) -> None:
     """
     Initialize an `Index` object.
     """
@@ -41,8 +42,8 @@ class Index:
 
   def __repr__(self) -> str:
     dense_shape = f"Dimension: {str(self.dim)} \n"
-    charge_str = str(self._charges).replace('\n,', ',\n')
-    charge_str = charge_str.replace('\n', '\n            ')
+    charge_str = str(self._charges).replace("\n,", ",\n")
+    charge_str = charge_str.replace("\n", "\n            ")
     charges = f"Charges:  {charge_str} \n"
     flow_info = f"Flows:  {str(self.flow)} \n"
     return f"Index:\n  {dense_shape}  {charges}  {flow_info} "
@@ -55,11 +56,13 @@ class Index:
     if len(other._charges) != len(self._charges):
       return False
     for n in range(len(self._charges)):
-      if not np.array_equal(self._charges[n].unique_charges,
-                            other._charges[n].unique_charges):
+      if not np.array_equal(
+        self._charges[n].unique_charges, other._charges[n].unique_charges
+      ):
         return False
-      if not np.array_equal(self._charges[n].charge_labels,
-                            other._charges[n].charge_labels):
+      if not np.array_equal(
+        self._charges[n].charge_labels, other._charges[n].charge_labels
+      ):
         return False
     if not np.all(np.asarray(self.flow) == np.asarray(other.flow)):
       return False
@@ -72,8 +75,8 @@ class Index:
         `Index` are copied as well.
     """
     index_copy = Index(
-        charges=[c.copy() for c in self._charges],
-        flow=copy.deepcopy(self.flow))
+      charges=[c.copy() for c in self._charges], flow=copy.deepcopy(self.flow)
+    )
 
     return index_copy
 
@@ -102,14 +105,14 @@ class Index:
       Index
     """
     return Index(
-        charges=[c.copy() for c in self._charges],
-        flow=list(np.logical_not(self.flow)))
+      charges=[c.copy() for c in self._charges], flow=list(np.logical_not(self.flow))
+    )
 
   def __mul__(self, index: "Index") -> "Index":
     """
     Merge `index` and self into a single larger index.
     The flow of the resulting index is set to 1.
-    Flows of `self` and `index` are multiplied into 
+    Flows of `self` and `index` are multiplied into
     the charges upon fusing.n
     """
     return fuse_index_pair(self, index)
@@ -135,8 +138,9 @@ def fuse_index_pair(left_index: Index, right_index: Index) -> Index:
   """
 
   return Index(
-      charges=left_index.flat_charges + right_index.flat_charges,
-      flow=left_index.flat_flows + right_index.flat_flows)
+    charges=left_index.flat_charges + right_index.flat_charges,
+    flow=left_index.flat_flows + right_index.flat_flows,
+  )
 
 
 def fuse_indices(indices: List[Index]) -> Index:

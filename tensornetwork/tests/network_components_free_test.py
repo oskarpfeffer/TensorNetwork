@@ -1,4 +1,4 @@
-#pylint: disable=no-member
+# pylint: disable=no-member
 import numpy as np
 import tensorflow as tf
 import torch
@@ -8,41 +8,49 @@ from collections import namedtuple
 import h5py
 import re
 import tensornetwork.network_components as network_components
-from tensornetwork.network_components import (Node, CopyNode, Edge,
-                                              NodeCollection, AbstractNode,
-                                              _remove_trace_edge, _remove_edges)
+from tensornetwork.network_components import (
+  Node,
+  CopyNode,
+  Edge,
+  NodeCollection,
+  AbstractNode,
+  _remove_trace_edge,
+  _remove_edges,
+)
 import tensornetwork as tn
 from tensornetwork.backends.abstract_backend import AbstractBackend
 from typing import Dict
 
 string_type = network_components.string_type
 ENCODING = network_components.STRING_ENCODING
-SingleNodeEdgeTensor = namedtuple('SingleNodeEdgeTensor', 'node edge tensor')
-DoubleNodeEdgeTensor = namedtuple('DoubleNodeEdgeTensor',
-                                  'node1 node2 edge1 edge12 tensor')
+SingleNodeEdgeTensor = namedtuple("SingleNodeEdgeTensor", "node edge tensor")
+DoubleNodeEdgeTensor = namedtuple(
+  "DoubleNodeEdgeTensor", "node1 node2 edge1 edge12 tensor"
+)
 
-op_backend_dtype_values = [('numpy', np.float32, np.float32),
-                           ('numpy', np.float64, np.float64),
-                           ('numpy', np.complex64, np.complex64),
-                           ('numpy', np.complex128, np.complex128),
-                           ('pytorch', np.float32, torch.float32),
-                           ('pytorch', np.float64, torch.float64),
-                           ('tensorflow', np.float32, tf.float32),
-                           ('tensorflow', np.float64, tf.float64),
-                           ('tensorflow', np.complex64, tf.complex64),
-                           ('tensorflow', np.complex128, tf.complex128),
-                           ('jax', np.float32, np.float32),
-                           ('jax', np.float64, np.float64),
-                           ('jax', np.complex64, np.complex64),
-                           ('jax', np.complex128, np.complex128)]
+op_backend_dtype_values = [
+  ("numpy", np.float32, np.float32),
+  ("numpy", np.float64, np.float64),
+  ("numpy", np.complex64, np.complex64),
+  ("numpy", np.complex128, np.complex128),
+  ("pytorch", np.float32, torch.float32),
+  ("pytorch", np.float64, torch.float64),
+  ("tensorflow", np.float32, tf.float32),
+  ("tensorflow", np.float64, tf.float64),
+  ("tensorflow", np.complex64, tf.complex64),
+  ("tensorflow", np.complex128, tf.complex128),
+  ("jax", np.float32, np.float32),
+  ("jax", np.float64, np.float64),
+  ("jax", np.complex64, np.complex64),
+  ("jax", np.complex128, np.complex128),
+]
 
 
 class TestNode(AbstractNode):
-
-  def get_tensor(self):  #pylint: disable=useless-super-delegation
+  def get_tensor(self):  # pylint: disable=useless-super-delegation
     return super().get_tensor()
 
-  def set_tensor(self, tensor):  #pylint: disable=useless-super-delegation
+  def set_tensor(self, tensor):  # pylint: disable=useless-super-delegation
     return super().set_tensor(tensor)
 
   @property
@@ -53,7 +61,7 @@ class TestNode(AbstractNode):
   def tensor(self):
     return super().tensor
 
-  #pylint: disable=no-member
+  # pylint: disable=no-member
   @tensor.setter
   def tensor(self, tensor):
     return super(TestNode, type(self)).tensor.fset(self, tensor)
@@ -61,7 +69,7 @@ class TestNode(AbstractNode):
   def _load_node(self, node_data):  # pylint: disable=useless-super-delegation
     return super()._load_node(node_data)
 
-  def _save_node(self, node_group):  #pylint: disable=useless-super-delegation
+  def _save_node(self, node_group):  # pylint: disable=useless-super-delegation
     return super()._save_node(node_group)
 
   def copy(self, conjugate: bool = False) -> "TestNode":
@@ -75,38 +83,32 @@ class TestNode(AbstractNode):
     return cls()
 
 
-@pytest.fixture(name='single_node_edge')
+@pytest.fixture(name="single_node_edge")
 def fixture_single_node_edge(backend):
   tensor = np.ones((1, 2, 2))
   node = Node(
-      tensor=tensor,
-      name="test_node",
-      axis_names=["a", "b", "c"],
-      backend=backend)
+    tensor=tensor, name="test_node", axis_names=["a", "b", "c"], backend=backend
+  )
   edge = Edge(name="edge", node1=node, axis1=0)
   return SingleNodeEdgeTensor(node, edge, tensor)
 
 
-@pytest.fixture(name='double_node_edge')
+@pytest.fixture(name="double_node_edge")
 def fixture_double_node_edge(backend):
   tensor = np.ones((1, 2, 2))
   node1 = Node(
-      tensor=tensor,
-      name="test_node1",
-      axis_names=["a", "b", "c"],
-      backend=backend)
+    tensor=tensor, name="test_node1", axis_names=["a", "b", "c"], backend=backend
+  )
   node2 = Node(
-      tensor=tensor,
-      name="test_node2",
-      axis_names=["a", "b", "c"],
-      backend=backend)
+    tensor=tensor, name="test_node2", axis_names=["a", "b", "c"], backend=backend
+  )
   tn.connect(node1["b"], node2["b"])
   edge1 = Edge(name="edge", node1=node1, axis1=0)
   edge12 = Edge(name="edge", node1=node1, axis1=1, node2=node2, axis2=1)
   return DoubleNodeEdgeTensor(node1, node2, edge1, edge12, tensor)
 
 
-@pytest.fixture(name='copy_node')
+@pytest.fixture(name="copy_node")
 def fixture_copy_node(backend):
   return CopyNode(4, 2, "copier", ["a", "b", "c", "d"], backend=backend)
 
@@ -114,12 +116,10 @@ def fixture_copy_node(backend):
 def test_node_initialize_numpy():
   tensor = np.ones((1, 2, 3))
   node = Node(
-      tensor=tensor,
-      name="test_node",
-      axis_names=["a", "b", "c"],
-      backend='numpy')
+    tensor=tensor, name="test_node", axis_names=["a", "b", "c"], backend="numpy"
+  )
   np.testing.assert_allclose(node.tensor, tensor)
-  assert node.name == 'test_node'
+  assert node.name == "test_node"
   assert len(node.edges) == 3
   assert isinstance(node.edges[0], Edge)
   assert node.axis_names == ["a", "b", "c"]
@@ -128,13 +128,11 @@ def test_node_initialize_numpy():
 def test_node_initialize_tensorflow():
   tensor = tf.ones((1, 2, 3))
   node = Node(
-      tensor=tensor,
-      name="test_node",
-      axis_names=["a", "b", "c"],
-      backend='tensorflow')
+    tensor=tensor, name="test_node", axis_names=["a", "b", "c"], backend="tensorflow"
+  )
   print(node.tensor)
   np.testing.assert_allclose(node.tensor, np.ones((1, 2, 3)))
-  assert node.name == 'test_node'
+  assert node.name == "test_node"
   assert len(node.edges) == 3
   assert isinstance(node.edges[0], Edge)
   assert node.axis_names == ["a", "b", "c"]
@@ -382,10 +380,8 @@ def test_node_magic_matmul_raises_error_different_network(single_node_edge):
   node = single_node_edge.node
   tensor = node.backend.convert_to_tensor(np.zeros((1, 2, 3)))
   node2 = Node(
-      tensor=tensor,
-      name="test",
-      axis_names=["A", "B", "C"],
-      backend=node.backend.name)
+    tensor=tensor, name="test", axis_names=["A", "B", "C"], backend=node.backend.name
+  )
   with pytest.raises(ValueError):
     assert node @ node2
 
@@ -399,9 +395,10 @@ def test_node_magic_matmul(backend):
   tn.connect(node1[0], node2[3])
   tn.connect(node2[1], node1[3])
   tn.connect(node1[1], node2[0])
-  actual = (node1 @ node2)
-  expected = np.array([[60, 60, 60, 60], [60, 60, 60, 60], [60, 60, 60, 60],
-                       [60, 60, 60, 60]])
+  actual = node1 @ node2
+  expected = np.array(
+    [[60, 60, 60, 60], [60, 60, 60, 60], [60, 60, 60, 60], [60, 60, 60, 60]]
+  )
   assert isinstance(actual, Node)
   np.testing.assert_allclose(actual.tensor, expected)
 
@@ -409,7 +406,7 @@ def test_node_magic_matmul(backend):
 def test_between_node_add_op(backend):
   node1 = Node(tensor=np.array([[1, 2], [3, 4]]), backend=backend)
   node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend=backend)
-  node3 = Node(tensor=np.array([[1., 2.], [3., 4.]]), backend=backend)
+  node3 = Node(tensor=np.array([[1.0, 2.0], [3.0, 4.0]]), backend=backend)
   int_node = Node(tensor=np.array(2, dtype=np.int64), backend=backend)
   float_node = Node(tensor=np.array(2.5, dtype=np.float64), backend=backend)
 
@@ -438,15 +435,13 @@ def test_between_node_add_op(backend):
 
 
 def test_node_and_scalar_add_op(backend):
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
   expected = np.array([[3, 4], [5, 6]])
   result = (node + 2).tensor
   np.testing.assert_almost_equal(result, expected)
   assert node.tensor.dtype == result.dtype
 
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
   expected = np.array([[3.5, 4.5], [5.5, 6.5]])
   result = (node + 2.5).tensor
   np.testing.assert_almost_equal(result, expected)
@@ -456,7 +451,7 @@ def test_node_and_scalar_add_op(backend):
 def test_between_node_sub_op(backend):
   node1 = Node(tensor=np.array([[1, 2], [3, 4]]), backend=backend)
   node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend=backend)
-  node3 = Node(tensor=np.array([[1., 2.], [3., 4.]]), backend=backend)
+  node3 = Node(tensor=np.array([[1.0, 2.0], [3.0, 4.0]]), backend=backend)
   int_node = Node(tensor=np.array(2, dtype=np.int64), backend=backend)
   float_node = Node(tensor=np.array(2.5, dtype=np.float64), backend=backend)
 
@@ -485,14 +480,12 @@ def test_between_node_sub_op(backend):
 
 
 def test_node_and_scalar_sub_op(backend):
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
   expected = np.array([[-1, 0], [1, 2]])
   result = (node - 2).tensor
   np.testing.assert_almost_equal(result, expected)
   assert node.tensor.dtype == result.dtype
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
   expected = np.array([[-1.5, -0.5], [0.5, 1.5]])
   result = (node - 2.5).tensor
   np.testing.assert_almost_equal(result, expected)
@@ -502,7 +495,7 @@ def test_node_and_scalar_sub_op(backend):
 def test_between_node_mul_op(backend):
   node1 = Node(tensor=np.array([[1, 2], [3, 4]]), backend=backend)
   node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend=backend)
-  node3 = Node(tensor=np.array([[1., 2.], [3., 4.]]), backend=backend)
+  node3 = Node(tensor=np.array([[1.0, 2.0], [3.0, 4.0]]), backend=backend)
   int_node = Node(tensor=np.array(2, dtype=np.int64), backend=backend)
   float_node = Node(tensor=np.array(2.5, dtype=np.float64), backend=backend)
 
@@ -528,15 +521,13 @@ def test_between_node_mul_op(backend):
 
 
 def test_node_and_scalar_mul_op(backend):
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.int32), backend=backend)
   expected = np.array([[2, 4], [6, 8]])
   result = (node * 2).tensor
   np.testing.assert_almost_equal(result, expected)
   assert node.tensor.dtype == result.dtype
 
-  node = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
+  node = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.float32), backend=backend)
   expected = np.array([[2.5, 5], [7.5, 10]])
   result = (node * 2.5).tensor
   np.testing.assert_almost_equal(result, expected)
@@ -546,9 +537,11 @@ def test_node_and_scalar_mul_op(backend):
 @pytest.mark.parametrize("backend, npdtype, dtype", op_backend_dtype_values)
 def test_between_node_truediv_op(backend, npdtype, dtype):
   node1 = Node(
-      tensor=np.array([[1., 2.], [3., 4.]], dtype=npdtype), backend=backend)
+    tensor=np.array([[1.0, 2.0], [3.0, 4.0]], dtype=npdtype), backend=backend
+  )
   node2 = Node(
-      tensor=np.array([[10., 10.], [10., 10.]], dtype=npdtype), backend=backend)
+    tensor=np.array([[10.0, 10.0], [10.0, 10.0]], dtype=npdtype), backend=backend
+  )
   expected = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=npdtype)
   result = (node1 / node2).tensor
   np.testing.assert_almost_equal(result, expected)
@@ -556,13 +549,12 @@ def test_between_node_truediv_op(backend, npdtype, dtype):
 
 
 def test_between_node_div_op(backend):
-  if backend == 'pytorch':
+  if backend == "pytorch":
     pytest.skip("pytorch integer division no longer supported")
 
-  node1 = Node(tensor=np.array([[1., 2.], [3., 4.]]), backend=backend)
-  node2 = Node(tensor=np.array([[10., 10.], [10., 10.]]), backend=backend)
-  node3 = Node(
-      tensor=np.array([[1, 2], [3, 4]], dtype=np.int64), backend=backend)
+  node1 = Node(tensor=np.array([[1.0, 2.0], [3.0, 4.0]]), backend=backend)
+  node2 = Node(tensor=np.array([[10.0, 10.0], [10.0, 10.0]]), backend=backend)
+  node3 = Node(tensor=np.array([[1, 2], [3, 4]], dtype=np.int64), backend=backend)
   int_node = Node(tensor=np.array(2, dtype=np.int64), backend=backend)
   float_node = Node(tensor=np.array(2.5, dtype=np.float64), backend=backend)
 
@@ -570,19 +562,19 @@ def test_between_node_div_op(backend):
   result = (node1 / node2).tensor
   np.testing.assert_almost_equal(result, expected)
   assert node1.tensor.dtype == node2.tensor.dtype == result.dtype
-  expected = np.array([[0.5, 1.], [1.5, 2.]])
+  expected = np.array([[0.5, 1.0], [1.5, 2.0]])
   result = (node3 / int_node).tensor
   np.testing.assert_almost_equal(result, expected)
-  assert node3.tensor.dtype == 'int64'
-  assert result.dtype == 'float64'
+  assert node3.tensor.dtype == "int64"
+  assert result.dtype == "float64"
 
-  expected = np.array([[2., 1.], [2 / 3, 0.5]])
+  expected = np.array([[2.0, 1.0], [2 / 3, 0.5]])
   result = (int_node / node3).tensor
   np.testing.assert_almost_equal(result, expected)
-  assert node3.tensor.dtype == 'int64'
-  assert result.dtype == 'float64'
+  assert node3.tensor.dtype == "int64"
+  assert result.dtype == "float64"
 
-  expected = np.array([[4., 4.], [4., 4.]])
+  expected = np.array([[4.0, 4.0], [4.0, 4.0]])
   result = (node2 / float_node).tensor
   np.testing.assert_almost_equal(result, expected)
   assert node2.dtype == float_node.dtype == result.dtype
@@ -594,8 +586,7 @@ def test_between_node_div_op(backend):
 
 @pytest.mark.parametrize("backend, npdtype, dtype", op_backend_dtype_values)
 def test_node_and_scalar_div_op(backend, npdtype, dtype):
-  node = Node(
-      tensor=np.array([[5, 10], [15, 20]], dtype=npdtype), backend=backend)
+  node = Node(tensor=np.array([[5, 10], [15, 20]], dtype=npdtype), backend=backend)
   expected = np.array([[0.5, 1.0], [1.5, 2.0]], dtype=npdtype)
   result = (node / 10).tensor
   np.testing.assert_almost_equal(result, expected)
@@ -604,10 +595,10 @@ def test_node_and_scalar_div_op(backend, npdtype, dtype):
 
 
 def test_node_add_input_error():
-  #pylint: disable=unused-variable
-  #pytype: disable=unsupported-operands
-  node1 = Node(tensor=2, backend='numpy')
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='numpy')
+  # pylint: disable=unused-variable
+  # pytype: disable=unsupported-operands
+  node1 = Node(tensor=2, backend="numpy")
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="numpy")
 
   del node1._tensor
   with pytest.raises(AttributeError):
@@ -616,24 +607,24 @@ def test_node_add_input_error():
     result = node2 + node1
 
   node1.tensor = 1
-  node2 = 'str'
+  node2 = "str"
   copynode = tn.CopyNode(rank=4, dimension=3)
   with pytest.raises(TypeError):
     result = node1 + node2
   with pytest.raises(TypeError):
     result = node1 + copynode
 
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='pytorch')
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="pytorch")
   with pytest.raises(TypeError):
     result = node1 + node2
-  #pytype: enable=unsupported-operands
+  # pytype: enable=unsupported-operands
 
 
 def test_node_sub_input_error():
-  #pylint: disable=unused-variable
-  #pytype: disable=unsupported-operands
-  node1 = Node(tensor=2, backend='numpy')
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='numpy')
+  # pylint: disable=unused-variable
+  # pytype: disable=unsupported-operands
+  node1 = Node(tensor=2, backend="numpy")
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="numpy")
 
   del node1._tensor
   with pytest.raises(AttributeError):
@@ -641,24 +632,24 @@ def test_node_sub_input_error():
     result = node2 - node1
 
   node1.tensor = 1
-  node2 = 'str'
+  node2 = "str"
   copynode = tn.CopyNode(rank=4, dimension=3)
   with pytest.raises(TypeError):
     result = node1 - node2
   with pytest.raises(TypeError):
     result = node1 - copynode
 
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='pytorch')
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="pytorch")
   with pytest.raises(TypeError):
     result = node1 - node2
-  #pytype: enable=unsupported-operands
+  # pytype: enable=unsupported-operands
 
 
 def test_node_mul_input_error():
-  #pylint: disable=unused-variable
-  #pytype: disable=unsupported-operands
-  node1 = Node(tensor=2, backend='numpy')
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='numpy')
+  # pylint: disable=unused-variable
+  # pytype: disable=unsupported-operands
+  node1 = Node(tensor=2, backend="numpy")
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="numpy")
 
   del node1._tensor
   with pytest.raises(AttributeError):
@@ -666,25 +657,25 @@ def test_node_mul_input_error():
     result = node2 * node1
 
   node1.tensor = 1
-  node2 = 'str'
+  node2 = "str"
   copynode = tn.CopyNode(rank=4, dimension=3)
   with pytest.raises(TypeError):
     result = node1 * node2
   with pytest.raises(TypeError):
     result = node1 * copynode
 
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='pytorch')
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="pytorch")
   with pytest.raises(TypeError):
     result = node1 * node2
-  #pytype: enable=unsupported-operands
+  # pytype: enable=unsupported-operands
 
 
 def test_node_div_input_error():
-  #pylint: disable=unused-variable
-  #pytype: disable=unsupported-operands
-  node1 = Node(tensor=2, backend='numpy')
-  node1 = Node(tensor=2, backend='numpy')
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='numpy')
+  # pylint: disable=unused-variable
+  # pytype: disable=unsupported-operands
+  node1 = Node(tensor=2, backend="numpy")
+  node1 = Node(tensor=2, backend="numpy")
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="numpy")
 
   del node1._tensor
   with pytest.raises(AttributeError):
@@ -693,71 +684,78 @@ def test_node_div_input_error():
     result = node2 / node1
 
   node1.tensor = 1
-  node2 = 'str'
+  node2 = "str"
   copynode = tn.CopyNode(rank=4, dimension=3)
   with pytest.raises(TypeError):
     result = node1 / node2
   with pytest.raises(TypeError):
     result = node1 / copynode
 
-  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend='pytorch')
+  node2 = Node(tensor=np.array([[10, 10], [10, 10]]), backend="pytorch")
   with pytest.raises(TypeError):
     result = node1 / node2
-  #pytype: enable=unsupported-operands
+  # pytype: enable=unsupported-operands
 
 
 def test_node_save_structure(tmp_path, single_node_edge):
   node = single_node_edge.node
-  with h5py.File(tmp_path / 'nodes', 'w') as node_file:
-    node_group = node_file.create_group('test_node')
+  with h5py.File(tmp_path / "nodes", "w") as node_file:
+    node_group = node_file.create_group("test_node")
     node._save_node(node_group)
     assert set(list(node_file.keys())) == {"test_node"}
-    assert set(list(node_file['test_node'])) == {
-        "tensor", 'backend', 'name', 'edges', 'shape', 'axis_names', "type"
+    assert set(list(node_file["test_node"])) == {
+      "tensor",
+      "backend",
+      "name",
+      "edges",
+      "shape",
+      "axis_names",
+      "type",
     }
 
 
 def test_node_save_data(tmp_path, single_node_edge):
   node = single_node_edge.node
-  with h5py.File(tmp_path / 'nodes', 'w') as node_file:
-    node_group = node_file.create_group('test_node')
+  with h5py.File(tmp_path / "nodes", "w") as node_file:
+    node_group = node_file.create_group("test_node")
     node._save_node(node_group)
-    np.testing.assert_allclose(node_group['tensor'][()], node.tensor)
-    assert node_file['test_node/backend'].asstr(ENCODING)[(
-    )] == node.backend.name
-    assert node_file['test_node/type'].asstr(ENCODING)[(
-    )] == type(node).__name__
-    assert node_file['test_node/name'].asstr(ENCODING)[()] == node.name
-    assert set(node_file['test_node/shape'][()]) == set(node.shape)
-    assert set(node_file['test_node/axis_names'].asstr(ENCODING)[()]) == set(
-        node.axis_names)
-    assert (set(node_file['test_node/edges'].asstr(ENCODING)[()]) == set(
-        edge.name for edge in node.edges))
+    np.testing.assert_allclose(node_group["tensor"][()], node.tensor)
+    assert node_file["test_node/backend"].asstr(ENCODING)[()] == node.backend.name
+    assert node_file["test_node/type"].asstr(ENCODING)[()] == type(node).__name__
+    assert node_file["test_node/name"].asstr(ENCODING)[()] == node.name
+    assert set(node_file["test_node/shape"][()]) == set(node.shape)
+    assert set(node_file["test_node/axis_names"].asstr(ENCODING)[()]) == set(
+      node.axis_names
+    )
+    assert set(node_file["test_node/edges"].asstr(ENCODING)[()]) == set(
+      edge.name for edge in node.edges
+    )
 
 
 def test_node_load(tmp_path, single_node_edge):
   node = single_node_edge.node
-  with h5py.File(tmp_path / 'node', 'w') as node_file:
-    node_group = node_file.create_group('node_data')
-    node_group.create_dataset('tensor', data=node._tensor)
-    node_group.create_dataset('backend', data=node.backend.name)
-    node_group.create_dataset('name', data=node.name)
-    node_group.create_dataset('shape', data=node.shape)
+  with h5py.File(tmp_path / "node", "w") as node_file:
+    node_group = node_file.create_group("node_data")
+    node_group.create_dataset("tensor", data=node._tensor)
+    node_group.create_dataset("backend", data=node.backend.name)
+    node_group.create_dataset("name", data=node.name)
+    node_group.create_dataset("shape", data=node.shape)
     node_group.create_dataset(
-        'axis_names',
-        data=np.array(node.axis_names, dtype=object),
-        dtype=string_type)
+      "axis_names", data=np.array(node.axis_names, dtype=object), dtype=string_type
+    )
     node_group.create_dataset(
-        'edges',
-        data=np.array([edge.name for edge in node.edges], dtype=object),
-        dtype=string_type)
+      "edges",
+      data=np.array([edge.name for edge in node.edges], dtype=object),
+      dtype=string_type,
+    )
 
     loaded_node = Node._load_node(node_data=node_file["node_data/"])
     assert loaded_node.name == node.name
     assert loaded_node.backend.name == node.backend.name
     assert set(loaded_node.axis_names) == set(node.axis_names)
-    assert (set(edge.name for edge in loaded_node.edges) == set(
-        edge.name for edge in node.edges))
+    assert set(edge.name for edge in loaded_node.edges) == set(
+      edge.name for edge in node.edges
+    )
     np.testing.assert_allclose(loaded_node.tensor, node.tensor)
 
 
@@ -774,18 +772,19 @@ def test_copy_node_shape(copy_node):
 
 
 def test_copy_node_tensor(copy_node):
-  expected = np.array(([[[[1, 0], [0, 0]], [[0, 0], [0, 0]]],
-                        [[[0, 0], [0, 0]], [[0, 0], [0, 1]]]]))
+  expected = np.array(
+    ([[[[1, 0], [0, 0]], [[0, 0], [0, 0]]], [[[0, 0], [0, 0]], [[0, 0], [0, 1]]]])
+  )
   np.testing.assert_allclose(copy_node.get_tensor(), expected)
   np.testing.assert_allclose(copy_node.tensor, expected)
   np.testing.assert_allclose(copy_node._tensor, expected)
 
 
 def test_copy_node_make_copy_tensor(copy_node):
-  expected = np.array(([[[[1, 0], [0, 0]], [[0, 0], [0, 0]]],
-                        [[[0, 0], [0, 0]], [[0, 0], [0, 1]]]]))
-  np.testing.assert_allclose(
-      copy_node.make_copy_tensor(4, 2, dtype=np.int64), expected)
+  expected = np.array(
+    ([[[[1, 0], [0, 0]], [[0, 0], [0, 0]]], [[[0, 0], [0, 0]], [[0, 0], [0, 1]]]])
+  )
+  np.testing.assert_allclose(copy_node.make_copy_tensor(4, 2, dtype=np.int64), expected)
 
 
 def test_copy_node_set_tensor(copy_node):
@@ -806,71 +805,85 @@ def test_copy_node_set_tensor_property(copy_node):
 
 def test_copy_node_save_structure(tmp_path, backend):
   node = tn.CopyNode(
-      rank=4,
-      dimension=3,
-      name='copier',
-      axis_names=[str(n) for n in range(4)],
-      backend=backend)
-  with h5py.File(tmp_path / 'nodes', 'w') as node_file:
-    node_group = node_file.create_group('test_node')
+    rank=4,
+    dimension=3,
+    name="copier",
+    axis_names=[str(n) for n in range(4)],
+    backend=backend,
+  )
+  with h5py.File(tmp_path / "nodes", "w") as node_file:
+    node_group = node_file.create_group("test_node")
     node._save_node(node_group)
     assert set(list(node_file.keys())) == {"test_node"}
-    assert set(list(node_file['test_node'])) == {
-        'name', 'edges', 'backend', 'shape', 'axis_names', 'copy_node_dtype',
-        "type"
+    assert set(list(node_file["test_node"])) == {
+      "name",
+      "edges",
+      "backend",
+      "shape",
+      "axis_names",
+      "copy_node_dtype",
+      "type",
     }
 
 
 def test_copy_node_save_data(tmp_path, backend):
   node = tn.CopyNode(
-      rank=4,
-      dimension=3,
-      name='copier',
-      axis_names=[str(n) for n in range(4)],
-      backend=backend)
-  with h5py.File(tmp_path / 'nodes', 'w') as node_file:
-    node_group = node_file.create_group('copier')
+    rank=4,
+    dimension=3,
+    name="copier",
+    axis_names=[str(n) for n in range(4)],
+    backend=backend,
+  )
+  with h5py.File(tmp_path / "nodes", "w") as node_file:
+    node_group = node_file.create_group("copier")
     node._save_node(node_group)
-    assert node_file['copier/backend'].asstr(ENCODING)[()] == node.backend.name
-    assert node_file['copier/type'].asstr(ENCODING)[()] == type(node).__name__
-    assert node_file['copier/name'].asstr(ENCODING)[()] == node.name
-    assert node_file['copier/copy_node_dtype'].asstr(ENCODING)[()] == np.dtype(
-        node.copy_node_dtype).name
-    assert set(node_file['copier/shape'][()]) == set(node.shape)
-    assert set(node_file['copier/axis_names'].asstr(ENCODING)[()]) == set(
-        node.axis_names)
-    assert (set(node_file['copier/edges'].asstr(ENCODING)[()]) == set(
-        edge.name for edge in node.edges))
+    assert node_file["copier/backend"].asstr(ENCODING)[()] == node.backend.name
+    assert node_file["copier/type"].asstr(ENCODING)[()] == type(node).__name__
+    assert node_file["copier/name"].asstr(ENCODING)[()] == node.name
+    assert (
+      node_file["copier/copy_node_dtype"].asstr(ENCODING)[()]
+      == np.dtype(node.copy_node_dtype).name
+    )
+    assert set(node_file["copier/shape"][()]) == set(node.shape)
+    assert set(node_file["copier/axis_names"].asstr(ENCODING)[()]) == set(
+      node.axis_names
+    )
+    assert set(node_file["copier/edges"].asstr(ENCODING)[()]) == set(
+      edge.name for edge in node.edges
+    )
 
 
 def test_copy_node_load(tmp_path, backend):
   node = tn.CopyNode(
-      rank=4,
-      dimension=3,
-      name='copier',
-      axis_names=[str(n) for n in range(4)],
-      backend=backend)
-  with h5py.File(tmp_path / 'node', 'w') as node_file:
-    node_group = node_file.create_group('node_data')
-    node_group.create_dataset('backend', data=node.backend.name)
+    rank=4,
+    dimension=3,
+    name="copier",
+    axis_names=[str(n) for n in range(4)],
+    backend=backend,
+  )
+  with h5py.File(tmp_path / "node", "w") as node_file:
+    node_group = node_file.create_group("node_data")
+    node_group.create_dataset("backend", data=node.backend.name)
     node_group.create_dataset(
-        'copy_node_dtype', data=np.dtype(node.copy_node_dtype).name)
-    node_group.create_dataset('name', data=node.name)
-    node_group.create_dataset('shape', data=node.shape)
+      "copy_node_dtype", data=np.dtype(node.copy_node_dtype).name
+    )
+    node_group.create_dataset("name", data=node.name)
+    node_group.create_dataset("shape", data=node.shape)
     node_group.create_dataset(
-        'axis_names',
-        data=np.array(node.axis_names, dtype=object),
-        dtype=string_type)
+      "axis_names", data=np.array(node.axis_names, dtype=object), dtype=string_type
+    )
     node_group.create_dataset(
-        'edges',
-        data=np.array([edge.name for edge in node.edges], dtype=object),
-        dtype=string_type)
+      "edges",
+      data=np.array([edge.name for edge in node.edges], dtype=object),
+      dtype=string_type,
+    )
 
     loaded_node = CopyNode._load_node(node_data=node_file["node_data/"])
     assert loaded_node.name == node.name
     assert set(loaded_node.axis_names) == set(node.axis_names)
-    assert (set(edge.name for edge in loaded_node.edges) == set(
-        edge.name for edge in node.edges))
+    assert set(edge.name for edge in loaded_node.edges) == set(
+      edge.name for edge in node.edges
+    )
     assert loaded_node.get_dimension(axis=1) == node.get_dimension(axis=1)
     assert loaded_node.get_rank() == node.get_rank()
     assert loaded_node.shape == node.shape
@@ -1005,8 +1018,8 @@ def test_edge_is_being_used_false(single_node_edge):
 
 def test_edge_set_name(single_node_edge):
   edge = single_node_edge.edge
-  edge.set_name('new_name')
-  assert edge.name == 'new_name'
+  edge.set_name("new_name")
+  assert edge.name == "new_name"
 
 
 def test_edge_magic_xor(double_node_edge):
@@ -1032,51 +1045,43 @@ def test_edge_magic_str(single_node_edge):
 
 def test_edge_node_save_structure(tmp_path, double_node_edge):
   edge12 = double_node_edge.edge12
-  with h5py.File(tmp_path / 'edges', 'w') as edge_file:
-    edge_group = edge_file.create_group('edge')
+  with h5py.File(tmp_path / "edges", "w") as edge_file:
+    edge_group = edge_file.create_group("edge")
     edge12._save_edge(edge_group)
-    assert set(list(
-        edge_group.keys())) == {"axis1", "node1", "axis2", "node2", "name"}
+    assert set(list(edge_group.keys())) == {"axis1", "node1", "axis2", "node2", "name"}
 
 
 def test_edge_node_save_data(tmp_path, double_node_edge):
   edge = double_node_edge.edge12
-  with h5py.File(tmp_path / 'edges', 'w') as edge_file:
-    edge_group = edge_file.create_group('edge')
+  with h5py.File(tmp_path / "edges", "w") as edge_file:
+    edge_group = edge_file.create_group("edge")
     edge._save_edge(edge_group)
-    assert edge_file['edge/name'].asstr(ENCODING)[()] == edge.name
-    assert edge_file['edge/node1'].asstr(ENCODING)[()] == edge.node1.name
-    assert edge_file['edge/node2'].asstr(ENCODING)[()] == edge.node2.name
-    assert edge_file['edge/axis1'][()] == edge.axis1
-    assert edge_file['edge/axis2'][()] == edge.axis2
+    assert edge_file["edge/name"].asstr(ENCODING)[()] == edge.name
+    assert edge_file["edge/node1"].asstr(ENCODING)[()] == edge.node1.name
+    assert edge_file["edge/node2"].asstr(ENCODING)[()] == edge.node2.name
+    assert edge_file["edge/axis1"][()] == edge.axis1
+    assert edge_file["edge/axis2"][()] == edge.axis2
 
 
 def test_edge_load(backend, tmp_path, double_node_edge):
   edge = double_node_edge.edge12
 
-  with h5py.File(tmp_path / 'edge', 'w') as edge_file:
-    edge_group = edge_file.create_group('edge_data')
-    edge_group.create_dataset('name', data=edge.name)
-    edge_group.create_dataset('node1', data=edge.node1.name)
-    edge_group.create_dataset('node2', data=edge.node2.name)
-    edge_group.create_dataset('axis1', data=edge.axis1)
-    edge_group.create_dataset('axis2', data=edge.axis2)
+  with h5py.File(tmp_path / "edge", "w") as edge_file:
+    edge_group = edge_file.create_group("edge_data")
+    edge_group.create_dataset("name", data=edge.name)
+    edge_group.create_dataset("node1", data=edge.node1.name)
+    edge_group.create_dataset("node2", data=edge.node2.name)
+    edge_group.create_dataset("axis1", data=edge.axis1)
+    edge_group.create_dataset("axis2", data=edge.axis2)
 
     ten = np.ones((1, 2, 2))
     node1 = Node(
-        tensor=2 * ten,
-        name="test_node1",
-        axis_names=["a", "b", "c"],
-        backend=backend)
+      tensor=2 * ten, name="test_node1", axis_names=["a", "b", "c"], backend=backend
+    )
     node2 = Node(
-        tensor=ten,
-        name="test_node2",
-        axis_names=["a", "b", "c"],
-        backend=backend)
-    loaded_edge = Edge._load_edge(edge_group, {
-        node1.name: node1,
-        node2.name: node2
-    })
+      tensor=ten, name="test_node2", axis_names=["a", "b", "c"], backend=backend
+    )
+    loaded_edge = Edge._load_edge(edge_group, {node1.name: node1, node2.name: node2})
     assert loaded_edge.name == edge.name
     assert loaded_edge.node1.name == edge.node1.name
     assert loaded_edge.node2.name == edge.node2.name
@@ -1122,14 +1127,14 @@ def test_disconnect(backend):
   n2 = Node(np.random.rand(2), backend=backend)
   e = n1[0] ^ n2[0]
   assert not e.is_dangling()
-  dangling_edge_1, dangling_edge_2 = e.disconnect('left_name', 'right_name')
+  dangling_edge_1, dangling_edge_2 = e.disconnect("left_name", "right_name")
   tn.check_correct([n1, n2], False)
   assert dangling_edge_1.is_dangling()
   assert dangling_edge_2.is_dangling()
   assert n1[0].is_dangling()
   assert n2[0].is_dangling()
-  assert n1[0].name == 'left_name'
-  assert n2[0].name == 'right_name'
+  assert n1[0].name == "left_name"
+  assert n2[0].name == "right_name"
   assert n1.get_edge(0) == dangling_edge_1
   assert n2.get_edge(0) == dangling_edge_2
 
@@ -1144,7 +1149,7 @@ def test_broken_edge_contraction(backend):
   n1 = Node(np.random.rand(2), backend=backend)
   n2 = Node(np.random.rand(2), backend=backend)
   e = n1[0] ^ n2[0]
-  e.disconnect('left_name', 'right_name')
+  e.disconnect("left_name", "right_name")
   with pytest.raises(ValueError):
     n1 @ n2
 
@@ -1170,49 +1175,58 @@ def test_broken_edge_contraction_magicmethod(backend):
 
 def test_save_nodes_raise(backend, tmp_path):
   nodes = [
-      Node(
-          np.random.rand(2, 2, 2, 2),
-          backend=backend,
-          name='Node{}'.format(n),
-          axis_names=[
-              'node{}_1'.format(n), 'node_{}_2'.format(n),
-              'node_{}_3'.format(n), 'node_{}_4'.format(n)
-          ]) for n in range(4)
+    Node(
+      np.random.rand(2, 2, 2, 2),
+      backend=backend,
+      name="Node{}".format(n),
+      axis_names=[
+        "node{}_1".format(n),
+        "node_{}_2".format(n),
+        "node_{}_3".format(n),
+        "node_{}_4".format(n),
+      ],
+    )
+    for n in range(4)
   ]
   _ = [nodes[n][0] ^ nodes[n + 1][1] for n in range(3)]
   with pytest.raises(ValueError):
-    tn.save_nodes([nodes[0], nodes[1]], tmp_path / 'test_file_save_nodes')
+    tn.save_nodes([nodes[0], nodes[1]], tmp_path / "test_file_save_nodes")
 
 
 def test_save_nodes_raise_2(backend, tmp_path):
   node = Node(
-      np.random.rand(2, 2, 2, 2),
-      backend=backend,
-      name='Node',
-      axis_names=['node_1', 'node_2', 'node_3', 'node_4'])
+    np.random.rand(2, 2, 2, 2),
+    backend=backend,
+    name="Node",
+    axis_names=["node_1", "node_2", "node_3", "node_4"],
+  )
 
   with pytest.raises(ValueError):
-    tn.save_nodes([node, node], tmp_path / 'test_file_save_nodes')
+    tn.save_nodes([node, node], tmp_path / "test_file_save_nodes")
 
 
 def test_save_load_nodes(backend, tmp_path):
   nodes = [
-      Node(
-          np.random.rand(2, 2, 2, 2),
-          backend=backend,
-          name='Node{}'.format(n),
-          axis_names=[
-              'node{}_1'.format(n), 'node{}_2'.format(n), 'node{}_3'.format(n),
-              'node{}_4'.format(n)
-          ]) for n in range(4)
+    Node(
+      np.random.rand(2, 2, 2, 2),
+      backend=backend,
+      name="Node{}".format(n),
+      axis_names=[
+        "node{}_1".format(n),
+        "node{}_2".format(n),
+        "node{}_3".format(n),
+        "node{}_4".format(n),
+      ],
+    )
+    for n in range(4)
   ]
 
   nodes[0][0] ^ nodes[1][1]
   nodes[2][1] ^ nodes[2][2]
 
-  tn.save_nodes(nodes, tmp_path / 'test_file_save_nodes')
+  tn.save_nodes(nodes, tmp_path / "test_file_save_nodes")
 
-  loaded_nodes = tn.load_nodes(tmp_path / 'test_file_save_nodes')
+  loaded_nodes = tn.load_nodes(tmp_path / "test_file_save_nodes")
   for n, node in enumerate(nodes):
     assert node.name == loaded_nodes[n].name
     assert node.axis_names == loaded_nodes[n].axis_names
@@ -1250,15 +1264,11 @@ def test_copy_node_add_to_node_collection():
   container = set()
   with NodeCollection(container):
     a = tn.CopyNode(
-        rank=4,
-        dimension=3,
-        name='copier1',
-        axis_names=[str(n) for n in range(4)])
+      rank=4, dimension=3, name="copier1", axis_names=[str(n) for n in range(4)]
+    )
     b = tn.CopyNode(
-        rank=2,
-        dimension=3,
-        name='copier2',
-        axis_names=[str(n) for n in range(2)])
+      rank=2, dimension=3, name="copier2", axis_names=[str(n) for n in range(2)]
+    )
   assert container == {a, b}
 
 
@@ -1289,14 +1299,16 @@ def test_repr_for_Nodes_and_Edges(double_node_edge):
 
 
 def test_base_node_name_list_throws_error():
-  with pytest.raises(TypeError,):
-    #pylint: disable=line-too-long
-    TestNode(name=["A"], axis_names=['a', 'b'])  # pytype: disable=wrong-arg-types
+  with pytest.raises(
+    TypeError,
+  ):
+    # pylint: disable=line-too-long
+    TestNode(name=["A"], axis_names=["a", "b"])  # pytype: disable=wrong-arg-types
 
 
 def test_base_node_name_int_throws_error():
   with pytest.raises(TypeError):
-    TestNode(name=1, axis_names=['a', 'b'])  # pytype: disable=wrong-arg-types
+    TestNode(name=1, axis_names=["a", "b"])  # pytype: disable=wrong-arg-types
 
 
 def test_base_node_axis_names_int_throws_error():
@@ -1306,29 +1318,29 @@ def test_base_node_axis_names_int_throws_error():
 
 def test_base_node_no_axis_names_no_shapes_throws_error():
   with pytest.raises(ValueError):
-    TestNode(name='a')
+    TestNode(name="a")
 
 
 def test_node_add_axis_names_int_throws_error():
-  n1 = Node(np.eye(2), axis_names=['a', 'b'])
+  n1 = Node(np.eye(2), axis_names=["a", "b"])
   with pytest.raises(TypeError):
     n1.add_axis_names([0, 1])  # pytype: disable=wrong-arg-types
 
 
 def test_node_axis_names_setter_throws_shape_large_mismatch_error():
-  n1 = Node(np.eye(2), axis_names=['a', 'b'])
+  n1 = Node(np.eye(2), axis_names=["a", "b"])
   with pytest.raises(ValueError):
-    n1.axis_names = ['a', 'b', 'c']
+    n1.axis_names = ["a", "b", "c"]
 
 
 def test_node_axis_names_setter_throws_shape_small_mismatch_error():
-  n1 = Node(np.eye(2), axis_names=['a', 'b'])
+  n1 = Node(np.eye(2), axis_names=["a", "b"])
   with pytest.raises(ValueError):
-    n1.axis_names = ['a']
+    n1.axis_names = ["a"]
 
 
 def test_node_axis_names_setter_throws_value_error():
-  n1 = Node(np.eye(2), axis_names=['a', 'b'])
+  n1 = Node(np.eye(2), axis_names=["a", "b"])
   with pytest.raises(TypeError):
     n1.axis_names = [0, 1]
 
@@ -1338,14 +1350,14 @@ def test_node_dtype(backend):
   assert n1.dtype == n1.tensor.dtype
 
 
-@pytest.mark.parametrize("name", [1, ['1']])
+@pytest.mark.parametrize("name", [1, ["1"]])
 def test_node_set_name_raises_type_error(backend, name):
   n1 = Node(np.random.rand(2), backend=backend)
   with pytest.raises(TypeError):
     n1.set_name(name)
 
 
-@pytest.mark.parametrize("name", [1, ['1']])
+@pytest.mark.parametrize("name", [1, ["1"]])
 def test_node_name_setter_raises_type_error(backend, name):
   n1 = Node(np.random.rand(2), backend=backend)
   with pytest.raises(TypeError):
@@ -1353,30 +1365,30 @@ def test_node_name_setter_raises_type_error(backend, name):
 
 
 def test_base_node_get_tensor():
-  n1 = TestNode(name="n1", axis_names=['a'], shape=(1,))
+  n1 = TestNode(name="n1", axis_names=["a"], shape=(1,))
   assert n1.get_tensor() is None
 
 
 def test_base_node_set_tensor():
-  n1 = TestNode(name="n1", axis_names=['a'], shape=(1,))
+  n1 = TestNode(name="n1", axis_names=["a"], shape=(1,))
   assert n1.set_tensor(np.random.rand(2)) is None
   assert n1.tensor is None
 
 
 def test_base_node_shape():
-  n1 = TestNode(name="n1", axis_names=['a'], shape=(1,))
+  n1 = TestNode(name="n1", axis_names=["a"], shape=(1,))
   n1._shape = None
   with pytest.raises(ValueError):
     n1.shape
 
 
 def test_base_node_tensor_getter():
-  n1 = TestNode(name="n1", axis_names=['a'], shape=(1,))
+  n1 = TestNode(name="n1", axis_names=["a"], shape=(1,))
   assert n1.tensor is None
 
 
 def test_base_node_tensor_setter():
-  n1 = TestNode(name="n1", axis_names=['a'], shape=(1,))
+  n1 = TestNode(name="n1", axis_names=["a"], shape=(1,))
   n1.tensor = np.random.rand(2)
   assert n1.tensor is None
 
@@ -1424,7 +1436,7 @@ def test_copy_node_get_partners_with_trace(backend):
   assert node1.get_partners() == {node2: {0, 1}}
 
 
-@pytest.mark.parametrize("name", [1, ['1']])
+@pytest.mark.parametrize("name", [1, ["1"]])
 def test_edge_name_throws_type_error(single_node_edge, name):
   with pytest.raises(TypeError):
     Edge(node1=single_node_edge.node, axis1=0, name=name)
@@ -1434,7 +1446,7 @@ def test_edge_name_setter_disabled_throws_error(single_node_edge):
   edge = Edge(node1=single_node_edge.node, axis1=0)
   edge.is_disabled = True
   with pytest.raises(ValueError):
-    edge.name = 'edge'
+    edge.name = "edge"
 
 
 def test_edge_name_getter_disabled_throws_error(single_node_edge):
@@ -1444,7 +1456,7 @@ def test_edge_name_getter_disabled_throws_error(single_node_edge):
     edge.name
 
 
-@pytest.mark.parametrize("name", [1, ['1']])
+@pytest.mark.parametrize("name", [1, ["1"]])
 def test_edge_name_setter_throws_type_error(single_node_edge, name):
   edge = Edge(node1=single_node_edge.node, axis1=0)
   with pytest.raises(TypeError):
@@ -1461,14 +1473,14 @@ def test_edge_node1_throws_value_error(single_node_edge):
 
 def test_edge_node2_throws_value_error(single_node_edge):
   edge = tn.connect(single_node_edge.node[1], single_node_edge.node[2])
-  edge.name = 'edge'
+  edge.name = "edge"
   edge._nodes[1] = None
   err_msg = "node2 for edge 'edge' no longer exists."
   with pytest.raises(ValueError, match=err_msg):
     edge.node2
 
 
-@pytest.mark.parametrize("name", [1, ['1']])
+@pytest.mark.parametrize("name", [1, ["1"]])
 def test_edge_set_name_throws_type_error(single_node_edge, name):
   edge = Edge(node1=single_node_edge.node, axis1=0)
   with pytest.raises(TypeError):
@@ -1489,8 +1501,12 @@ def test_get_all_dangling_single_node(single_node_edge):
 def test_get_all_dangling_double_node(double_node_edge):
   node1 = double_node_edge.node1
   node2 = double_node_edge.node2
-  assert set(tn.get_all_dangling(
-      {node1, node2})) == {node1[0], node1[2], node2[0], node2[2]}
+  assert set(tn.get_all_dangling({node1, node2})) == {
+    node1[0],
+    node1[2],
+    node2[0],
+    node2[2],
+  }
 
 
 def test_flatten_edges_different_backend_raises_value_error(single_node_edge):

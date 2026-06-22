@@ -19,8 +19,10 @@ from typing import Any, List, Optional, Text, Type, Union, Dict, Sequence
 from tensornetwork.matrixproductstates.base_mps import BaseMPS
 from tensornetwork.ncon_interface import ncon
 from tensornetwork.backends.abstract_backend import AbstractBackend
+
 Tensor = Any
-#TODO (mganahl): add jit
+# TODO (mganahl): add jit
+
 
 class InfiniteMPS(BaseMPS):
   """An MPS class for infinite systems.
@@ -35,11 +37,13 @@ class InfiniteMPS(BaseMPS):
   by calling the classmethod `InfiniteMPS.random`.
   """
 
-  def __init__(self,
-               tensors: List[Tensor],
-               center_position: Optional[int] = None,
-               connector_matrix: Optional[Tensor] = None,
-               backend: Optional[Union[AbstractBackend, Text]] = None) -> None:
+  def __init__(
+    self,
+    tensors: List[Tensor],
+    center_position: Optional[int] = None,
+    connector_matrix: Optional[Tensor] = None,
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+  ) -> None:
     """Initialize a InfiniteMPS.
 
     Args:
@@ -54,18 +58,20 @@ class InfiniteMPS(BaseMPS):
     """
 
     super().__init__(
-        tensors=tensors,
-        center_position=center_position,
-        connector_matrix=connector_matrix,
-        backend=backend)
+      tensors=tensors,
+      center_position=center_position,
+      connector_matrix=connector_matrix,
+      backend=backend,
+    )
 
   @classmethod
   def random(
-      cls,
-      d: List[int],
-      D: List[int],
-      dtype: Type[np.number],
-      backend: Optional[Union[AbstractBackend, Text]] = None) -> "InfiniteMPS":
+    cls,
+    d: List[int],
+    D: List[int],
+    dtype: Type[np.number],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+  ) -> "InfiniteMPS":
     """Initialize a random `InfiniteMPS`. The resulting state is normalized.
     Its center-position is at 0.
 
@@ -77,36 +83,37 @@ class InfiniteMPS(BaseMPS):
     Returns:
       `InfiniteMPS`
     """
-    #use numpy backend for tensor initialization
-    be = backend_factory.get_backend('numpy')
+    # use numpy backend for tensor initialization
+    be = backend_factory.get_backend("numpy")
     if len(D) != len(d) + 1:
-      raise ValueError('len(D) = {} is different from len(d) + 1= {}'.format(
-          len(D),
-          len(d) + 1))
+      raise ValueError(
+        "len(D) = {} is different from len(d) + 1= {}".format(len(D), len(d) + 1)
+      )
     if D[-1] != D[0]:
-      raise ValueError('D[0]={} != D[-1]={}.'.format(D[0], D[-1]))
+      raise ValueError("D[0]={} != D[-1]={}.".format(D[0], D[-1]))
 
-    tensors = [
-        be.randn((D[n], d[n], D[n + 1]), dtype=dtype) for n in range(len(d))
-    ]
+    tensors = [be.randn((D[n], d[n], D[n + 1]), dtype=dtype) for n in range(len(d))]
     return cls(tensors=tensors, center_position=0, backend=backend)
 
-  def unit_cell_transfer_operator(self, direction: Union[Text, int],
-                                  matrix: Tensor) -> Tensor:
+  def unit_cell_transfer_operator(
+    self, direction: Union[Text, int], matrix: Tensor
+  ) -> Tensor:
     sites = range(len(self))
-    if direction in (-1, 'r', 'right'):
+    if direction in (-1, "r", "right"):
       sites = reversed(sites)
 
     for site in sites:
       matrix = self.apply_transfer_operator(site, direction, matrix)
     return matrix
 
-  def transfer_matrix_eigs(self,
-                           direction: Union[Text, int],
-                           initial_state: Optional[Tensor] = None,
-                           precision: Optional[float] = 1E-10,
-                           num_krylov_vecs: Optional[int] = 30,
-                           maxiter: Optional[int] = None) -> Tensor:
+  def transfer_matrix_eigs(
+    self,
+    direction: Union[Text, int],
+    initial_state: Optional[Tensor] = None,
+    precision: Optional[float] = 1e-10,
+    num_krylov_vecs: Optional[int] = 30,
+    maxiter: Optional[int] = None,
+  ) -> Tensor:
     """Compute the dominant eigenvector of the MPS transfer matrix.
 
     Ars:
@@ -125,18 +132,20 @@ class InfiniteMPS(BaseMPS):
     """
     D = self.bond_dimensions[0]
 
-
     def mv(vector):
       result = self.unit_cell_transfer_operator(
-          direction, self.backend.reshape(vector, (D, D)))
+        direction, self.backend.reshape(vector, (D, D))
+      )
       return self.backend.reshape(result, (D * D,))
 
     if not initial_state:
-      initial_state = self.backend.randn((self.bond_dimensions[0]**2,),
-                                         dtype=self.dtype)
+      initial_state = self.backend.randn(
+        (self.bond_dimensions[0] ** 2,), dtype=self.dtype
+      )
     else:
-      initial_state = self.backend.reshape(initial_state,
-                                           (self.bond_dimensions[0]**2,))
+      initial_state = self.backend.reshape(
+        initial_state, (self.bond_dimensions[0] ** 2,)
+      )
 
     if D == 1:
       # special case of non boundary entanglement
@@ -145,7 +154,8 @@ class InfiniteMPS(BaseMPS):
       result = mv(initial_state)
       eigval = self.backend.norm(result)
       result = self.backend.reshape(
-          result, (self.bond_dimensions[0], self.bond_dimensions[0]))
+        result, (self.bond_dimensions[0], self.bond_dimensions[0])
+      )
       return eigval, result
 
     # note: for real dtype eta and dens are real.
@@ -154,16 +164,18 @@ class InfiniteMPS(BaseMPS):
     # eigenvalue and corresponding eigenvector are real
     # we cast them.
     eta, dens = self.backend.eigs(
-        A=mv,
-        initial_state=initial_state,
-        num_krylov_vecs=num_krylov_vecs,
-        numeig=1,
-        tol=precision,
-        which='LR',
-        maxiter=maxiter,
-        dtype=self.dtype)
+      A=mv,
+      initial_state=initial_state,
+      num_krylov_vecs=num_krylov_vecs,
+      numeig=1,
+      tol=precision,
+      which="LR",
+      maxiter=maxiter,
+      dtype=self.dtype,
+    )
     result = self.backend.reshape(
-        dens[0], (self.bond_dimensions[0], self.bond_dimensions[0]))
+      dens[0], (self.bond_dimensions[0], self.bond_dimensions[0])
+    )
     return eta[0], result
 
   def right_envs(self, sites: Sequence[int]) -> Dict:
@@ -176,15 +188,17 @@ class InfiniteMPS(BaseMPS):
     raise NotImplementedError()
 
   # pylint: disable=arguments-differ
-  def canonicalize(self,
-                   left_initial_state: Optional[Tensor] = None,
-                   right_initial_state: Optional[Tensor] = None,
-                   precision: Optional[float] = 1E-10,
-                   truncation_threshold: Optional[float] = 1E-15,
-                   D: Optional[int] = None,
-                   num_krylov_vecs: Optional[int] = 50,
-                   maxiter: Optional[int] = 1000,
-                   pseudo_inverse_cutoff: Optional[float] = None) -> None:
+  def canonicalize(
+    self,
+    left_initial_state: Optional[Tensor] = None,
+    right_initial_state: Optional[Tensor] = None,
+    precision: Optional[float] = 1e-10,
+    truncation_threshold: Optional[float] = 1e-15,
+    D: Optional[int] = None,
+    num_krylov_vecs: Optional[int] = 50,
+    maxiter: Optional[int] = 1000,
+    pseudo_inverse_cutoff: Optional[float] = None,
+  ) -> None:
     """Canonicalize an InfiniteMPS (i.e. bring it into Schmidt-canonical form).
 
     Args:
@@ -219,11 +233,12 @@ class InfiniteMPS(BaseMPS):
     # dtype of eta is the same as InfiniteMPS.dtype
     # this is assured in the backend.
     eta, l = self.transfer_matrix_eigs(
-        direction='left',
-        initial_state=left_initial_state,
-        precision=precision,
-        num_krylov_vecs=num_krylov_vecs,
-        maxiter=maxiter)
+      direction="left",
+      initial_state=left_initial_state,
+      precision=precision,
+      num_krylov_vecs=num_krylov_vecs,
+      maxiter=maxiter,
+    )
     sqrteta = self.backend.sqrt(self.backend.abs(eta))
     self.tensors[0] /= sqrteta
 
@@ -241,21 +256,26 @@ class InfiniteMPS(BaseMPS):
     inveigvals_left = self.backend.index_update(inveigvals_left, mask, 0.0)
 
     sqrtl = ncon(
-        [u_left, self.backend.diagflat(self.backend.sqrt(eigvals_left))],
-        [[-2, 1], [1, -1]],
-        backend=self.backend.name)
-    inv_sqrtl = ncon([
+      [u_left, self.backend.diagflat(self.backend.sqrt(eigvals_left))],
+      [[-2, 1], [1, -1]],
+      backend=self.backend.name,
+    )
+    inv_sqrtl = ncon(
+      [
         self.backend.diagflat(self.backend.sqrt(inveigvals_left)),
-        self.backend.conj(u_left)
-    ], [[-2, 1], [-1, 1]],
-                     backend=self.backend.name)
+        self.backend.conj(u_left),
+      ],
+      [[-2, 1], [-1, 1]],
+      backend=self.backend.name,
+    )
 
     eta, r = self.transfer_matrix_eigs(
-        direction='right',
-        initial_state=right_initial_state,
-        precision=precision,
-        num_krylov_vecs=num_krylov_vecs,
-        maxiter=maxiter)
+      direction="right",
+      initial_state=right_initial_state,
+      precision=precision,
+      num_krylov_vecs=num_krylov_vecs,
+      maxiter=maxiter,
+    )
 
     r /= self.backend.trace(r)
     r = (r + self.backend.transpose(self.backend.conj(r), (1, 0))) / 2.0
@@ -268,34 +288,43 @@ class InfiniteMPS(BaseMPS):
     inveigvals_right = 1.0 / eigvals_right
     inveigvals_right = self.backend.index_update(inveigvals_right, mask, 0.0)
     sqrtr = ncon(
-        [u_right, self.backend.diagflat(self.backend.sqrt(eigvals_right))],
-        [[-1, 1], [1, -2]],
-        backend=self.backend.name)
-    inv_sqrtr = ncon([
+      [u_right, self.backend.diagflat(self.backend.sqrt(eigvals_right))],
+      [[-1, 1], [1, -2]],
+      backend=self.backend.name,
+    )
+    inv_sqrtr = ncon(
+      [
         self.backend.diagflat(self.backend.sqrt(inveigvals_right)),
-        self.backend.conj(u_right)
-    ], [[-1, 1], [-2, 1]],
-                     backend=self.backend.name)
+        self.backend.conj(u_right),
+      ],
+      [[-1, 1], [-2, 1]],
+      backend=self.backend.name,
+    )
 
     tmp = ncon([sqrtl, sqrtr], [[-1, 1], [1, -2]], backend=self.backend.name)
     U, singvals, V, _ = self.backend.svd(
-        tmp,
-        pivot_axis=1,
-        max_singular_values=D,
-        max_truncation_error=truncation_threshold,
-        relative=True)
+      tmp,
+      pivot_axis=1,
+      max_singular_values=D,
+      max_truncation_error=truncation_threshold,
+      relative=True,
+    )
     lam = self.backend.diagflat(singvals)
-    self.tensors[0] = ncon([lam, V, inv_sqrtr, self.tensors[0]],
-                           [[-1, 1], [1, 2], [2, 3], [3, -2, -3]],
-                           backend=self.backend.name)
+    self.tensors[0] = ncon(
+      [lam, V, inv_sqrtr, self.tensors[0]],
+      [[-1, 1], [1, 2], [2, 3], [3, -2, -3]],
+      backend=self.backend.name,
+    )
 
     # absorb connector * inv_sqrtl * U * lam into the right-most tensor
     # Note that lam is absorbed here, which means that the state
     # is in the parallel decomposition
     # Note that we absorb connector_matrix here
-    self.tensors[-1] = ncon([self.get_tensor(len(self) - 1), inv_sqrtl, U, lam],
-                            [[-1, -2, 1], [1, 2], [2, 3], [3, -3]],
-                            backend=self.backend.name)
+    self.tensors[-1] = ncon(
+      [self.get_tensor(len(self) - 1), inv_sqrtl, U, lam],
+      [[-1, -2, 1], [1, 2], [2, 3], [3, -3]],
+      backend=self.backend.name,
+    )
     # now do a sweep of QR decompositions to bring the mps tensors into
     # left canonical form (except the last one)
     self.position(len(self) - 1)

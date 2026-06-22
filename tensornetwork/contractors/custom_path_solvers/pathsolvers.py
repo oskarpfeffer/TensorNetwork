@@ -53,15 +53,15 @@ def greedy_size_solve(log_adj_in: np.ndarray):
 
     # compute coords of minimal dim increase
     xcoord, ycoord = np.where(dim_change == np.min(dim_change.flatten()))
-    upper_tri = (xcoord < ycoord)
+    upper_tri = xcoord < ycoord
     xcoord = xcoord[upper_tri]
     ycoord = ycoord[upper_tri]
 
     # find contraction with minimal cost
     all_costs = np.array(
-        [single_cost[xcoord[i], ycoord[i]] for i in range(len(xcoord))])
-    cont_dims = np.array(
-        [log_adj[xcoord[i], ycoord[i]] for i in range(len(xcoord))])
+      [single_cost[xcoord[i], ycoord[i]] for i in range(len(xcoord))]
+    )
+    cont_dims = np.array([log_adj[xcoord[i], ycoord[i]] for i in range(len(xcoord))])
     if max(cont_dims) > 0:  # prioritise non-trivial contractions
       all_costs[cont_dims == 0] += max(all_costs) + 1
 
@@ -83,7 +83,7 @@ def greedy_size_solve(log_adj_in: np.ndarray):
     if costs is None:
       costs = single_cost[i, j]
     else:
-      costs = costs + np.log10(1 + 10**(single_cost[i, j] - costs))
+      costs = costs + np.log10(1 + 10 ** (single_cost[i, j] - costs))
 
   return orders, costs
 
@@ -115,7 +115,7 @@ def greedy_cost_solve(log_adj_in: np.ndarray):
     single_cost = comb_dims - log_adj
 
     # penalize trivial contractions and self-contractions
-    triv_conts = (log_adj < tol)
+    triv_conts = log_adj < tol
     trimmed_costs = single_cost + np.max(single_cost.flatten()) * triv_conts
     trimmed_costs = trimmed_costs + np.max(trimmed_costs.flatten()) * np.eye(N)
 
@@ -138,14 +138,16 @@ def greedy_cost_solve(log_adj_in: np.ndarray):
     if costs is None:
       costs = single_cost[i, j]
     else:
-      costs = costs + np.log10(1 + 10**(single_cost[i, j] - costs))
+      costs = costs + np.log10(1 + 10 ** (single_cost[i, j] - costs))
 
   return orders, costs
 
 
-def full_solve_complete(log_adj: np.ndarray,
-                        cost_bound: Optional[int] = None,
-                        max_branch: Optional[int] = None):
+def full_solve_complete(
+  log_adj: np.ndarray,
+  cost_bound: Optional[int] = None,
+  max_branch: Optional[int] = None,
+):
   """
   Solve for optimal contraction path of a network encoded as a log-adjacency
   matrix via a full search.
@@ -177,7 +179,7 @@ def full_solve_complete(log_adj: np.ndarray,
     # initialize arrays
     N = log_adj.shape[0]
     costs = np.zeros([1, 0])
-    groups = np.array(2**np.arange(N), dtype=np.uint64).reshape(N, 1)
+    groups = np.array(2 ** np.arange(N), dtype=np.uint64).reshape(N, 1)
     orders = np.zeros([2, 0, 1], dtype=int)
 
     # try full algorithm (using cost_bound from greedy)
@@ -186,12 +188,8 @@ def full_solve_complete(log_adj: np.ndarray,
     order_was_found = True
     for _ in range(N - 1):
       log_adj, costs, groups, orders, num_truncated = _full_solve_single(
-          log_adj,
-          costs,
-          groups,
-          orders,
-          cost_bound=cost_bound,
-          max_branch=max_branch)
+        log_adj, costs, groups, orders, cost_bound=cost_bound, max_branch=max_branch
+      )
       if log_adj.size == 0:
         # no paths found within the cost-bound
         order_was_found = False
@@ -200,7 +198,7 @@ def full_solve_complete(log_adj: np.ndarray,
 
   if order_was_found:
     # return result from full algorithm
-    is_optimal = (total_truncated == 0)
+    is_optimal = total_truncated == 0
     return orders.reshape(2, N - 1), costs.item(), is_optimal
 
   # return result from greedy algorithm
@@ -208,13 +206,15 @@ def full_solve_complete(log_adj: np.ndarray,
   return order_greedy, cost_greedy, is_optimal
 
 
-def _full_solve_single(log_adj: np.ndarray,
-                       costs: np.ndarray,
-                       groups: np.ndarray,
-                       orders: np.ndarray,
-                       cost_bound: Optional[int] = None,
-                       max_branch: Optional[int] = None,
-                       allow_outer: Optional[bool] = False):
+def _full_solve_single(
+  log_adj: np.ndarray,
+  costs: np.ndarray,
+  groups: np.ndarray,
+  orders: np.ndarray,
+  cost_bound: Optional[int] = None,
+  max_branch: Optional[int] = None,
+  allow_outer: Optional[bool] = False,
+):
   """
   Solve for the most-likely contraction step given a set of networks encoded
   as log-adjacency matrices. Uses an algorithm that searches multiple (or,
@@ -262,7 +262,6 @@ def _full_solve_single(log_adj: np.ndarray,
   # try to contract j-th tensor with i-th tensor (j<i)
   for i in range(1, N):
     for j in range(i):
-
       if not allow_outer:
         # only attempt non-trivial contractions
         new_pos = np.flatnonzero(log_adj[j, i, :] > 0)
@@ -277,13 +276,12 @@ def _full_solve_single(log_adj: np.ndarray,
         # dims of tensors and cost of contraction
         dims = np.sum(log_adj[:, :, new_pos], axis=0).reshape(N, num_kept)
         comb_dims = dims[j, :] + dims[i, :]
-        single_cost = np.reshape(comb_dims - log_adj[j, i, new_pos],
-                                 [1, num_kept])
+        single_cost = np.reshape(comb_dims - log_adj[j, i, new_pos], [1, num_kept])
         if costs.size == 0:
           new_costs = single_cost
         else:
           prev_cost = costs[0, new_pos]
-          new_costs = prev_cost + np.log10(1 + 10**(single_cost - prev_cost))
+          new_costs = prev_cost + np.log10(1 + 10 ** (single_cost - prev_cost))
 
         if cost_bound is not None:
           # only keep contractions under the cost bound
@@ -320,17 +318,15 @@ def _full_solve_single(log_adj: np.ndarray,
 
         # new orders
         prev_orders = orders[:, :, new_pos]
-        next_orders = np.vstack([
-            j * np.ones(len(new_pos), dtype=int),
-            i * np.ones(len(new_pos), dtype=int)
-        ]).reshape(2, 1, len(new_pos))
+        next_orders = np.vstack(
+          [j * np.ones(len(new_pos), dtype=int), i * np.ones(len(new_pos), dtype=int)]
+        ).reshape(2, 1, len(new_pos))
         new_orders = np.concatenate((prev_orders, next_orders), axis=1)
 
         # new_stable
         dims = np.sum(log_adj[:, :, new_pos], axis=0).reshape(N, num_kept)
         comb_dims = dims[j, :] + dims[i, :]
-        final_dims = np.reshape(comb_dims - 2 * log_adj[j, i, new_pos],
-                                [1, num_kept])
+        final_dims = np.reshape(comb_dims - 2 * log_adj[j, i, new_pos], [1, num_kept])
 
         # include a fudge factor to avoid rounding errors
         stable_pos = final_dims < (np.maximum(dims[j, :], dims[i, :]) + tol)
@@ -344,7 +340,8 @@ def _full_solve_single(log_adj: np.ndarray,
         # if number of intermediates too large then trigger compression routine
         if final_costs.size > mid_kept:
           temp_pos, num_truncated = _reduce_nets(
-              final_costs, final_groups, final_stable, max_branch=max_branch)
+            final_costs, final_groups, final_stable, max_branch=max_branch
+          )
           final_adj = final_adj[:, :, temp_pos]
           final_costs = final_costs[:, temp_pos]
           final_groups = final_groups[:, temp_pos]
@@ -360,13 +357,14 @@ def _full_solve_single(log_adj: np.ndarray,
   if only_outer_exist:  # network contains only outer products
     # re-solve with outer products enabled
     return _full_solve_single(
-        log_adj,
-        costs,
-        groups,
-        orders,
-        cost_bound=cost_bound,
-        max_branch=max_branch,
-        allow_outer=True)
+      log_adj,
+      costs,
+      groups,
+      orders,
+      cost_bound=cost_bound,
+      max_branch=max_branch,
+      allow_outer=True,
+    )
 
   # compress outputs
   temp_pos = _reduce_nets(final_costs, final_groups, final_stable)[0]
@@ -378,10 +376,12 @@ def _full_solve_single(log_adj: np.ndarray,
   return final_adj, final_costs, final_groups, final_orders, total_truncated
 
 
-def _reduce_nets(costs: np.ndarray,
-                 groups: np.ndarray,
-                 stable: np.ndarray,
-                 max_branch: Optional[int] = None):
+def _reduce_nets(
+  costs: np.ndarray,
+  groups: np.ndarray,
+  stable: np.ndarray,
+  max_branch: Optional[int] = None,
+):
   """
   Reduce from `m` starting paths smaller number of paths by first (i)
   identifying any equivalent networks then (ii) trimming the most expensive
@@ -419,9 +419,12 @@ def _reduce_nets(costs: np.ndarray,
 
       stable_pos = np.flatnonzero(stable[0, new_pos[num_cheapest:]])
       temp_pos = np.concatenate(
-          (np.arange(num_cheapest),
-           stable_pos[:min(len(stable_pos), num_stable)] + num_cheapest),
-          axis=0)
+        (
+          np.arange(num_cheapest),
+          stable_pos[: min(len(stable_pos), num_stable)] + num_cheapest,
+        ),
+        axis=0,
+      )
       new_pos = new_pos[temp_pos]
       num_truncated = orig_kept - len(new_pos)
 

@@ -15,6 +15,7 @@
 """
 Decorator functions that depend on the backend.
 """
+
 from typing import Union, Iterable, Optional, Text, Callable
 import functools
 import tensornetwork.backends.abstract_backend as abstract_backend
@@ -23,11 +24,15 @@ import tensornetwork.backend_contextmanager as backend_contextmanager
 
 AbstractBackend = abstract_backend.AbstractBackend
 
-def jit(fun: Callable,
-        backend: Union[Text, AbstractBackend] = None,
-        backend_argnum: Optional[int] = None,
-        static_argnums: Union[int, Iterable[int]] = (), device=None,
-        xla_backend: Optional[str] = None) -> Callable:
+
+def jit(
+  fun: Callable,
+  backend: Union[Text, AbstractBackend] = None,
+  backend_argnum: Optional[int] = None,
+  static_argnums: Union[int, Iterable[int]] = (),
+  device=None,
+  xla_backend: Optional[str] = None,
+) -> Callable:
   """
   Return a jitted or graph-compiled version of `fun`
   for JAX backend. For all other backends returns `fun`.
@@ -60,7 +65,12 @@ def jit(fun: Callable,
     if backend is not None:
       raise ValueError("backend must be None if backend_argnum is specified.")
     argnum_mode = True
-    static_argnums = tuple(list(static_argnums) + [backend_argnum,])
+    static_argnums = tuple(
+      list(static_argnums)
+      + [
+        backend_argnum,
+      ]
+    )
 
   if not argnum_mode:
     if backend is None:
@@ -69,21 +79,27 @@ def jit(fun: Callable,
 
     @functools.wraps(fun)
     def wrapper(*args, **kwargs):
-      jitted = backend_obj.jit(fun, static_argnums=static_argnums,
-                               device=device, backend=xla_backend)
+      jitted = backend_obj.jit(
+        fun, static_argnums=static_argnums, device=device, backend=xla_backend
+      )
       return jitted(*args, **kwargs)
   else:
+
     @functools.wraps(fun)
     def wrapper(*args, **kwargs):
       backend = args[backend_argnum]
       try:
         backend_obj = backends.backend_factory.get_backend(backend)
       except ValueError as error:
-        errstr = (f"backend_argnum={backend_argnum} was specified"
-                  f"but the corresponding argument {args[backend_argnum]}"
-                  f"did not specify a backend.")
+        errstr = (
+          f"backend_argnum={backend_argnum} was specified"
+          f"but the corresponding argument {args[backend_argnum]}"
+          f"did not specify a backend."
+        )
         raise ValueError(errstr) from error
-      jitted = backend_obj.jit(fun, static_argnums=static_argnums,
-                               device=device, backend=xla_backend)
+      jitted = backend_obj.jit(
+        fun, static_argnums=static_argnums, device=device, backend=xla_backend
+      )
       return jitted(*args, **kwargs)
+
   return wrapper

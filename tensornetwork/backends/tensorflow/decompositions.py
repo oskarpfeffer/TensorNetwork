@@ -19,12 +19,13 @@ Tensor = Any
 
 
 def svd(
-    tf: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    max_singular_values: Optional[int] = None,
-    max_truncation_error: Optional[float] = None,
-    relative: Optional[bool] = False) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+  tf: Any,
+  tensor: Tensor,
+  pivot_axis: int,
+  max_singular_values: Optional[int] = None,
+  max_truncation_error: Optional[float] = None,
+  relative: Optional[bool] = False,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
   """Computes the singular value decomposition (SVD) of a tensor.
 
   The SVD is performed by treating the tensor as a matrix, with an effective
@@ -78,9 +79,7 @@ def svd(
   left_dims = tf.shape(tensor)[:pivot_axis]
   right_dims = tf.shape(tensor)[pivot_axis:]
 
-  tensor = tf.reshape(tensor,
-                      [tf.reduce_prod(left_dims),
-                       tf.reduce_prod(right_dims)])
+  tensor = tf.reshape(tensor, [tf.reduce_prod(left_dims), tf.reduce_prod(right_dims)])
   s, u, v = tf.linalg.svd(tensor)
 
   if max_singular_values is None:
@@ -100,7 +99,8 @@ def svd(
     # We must keep at least this many singular values to ensure the
     # truncation error is <= abs_max_truncation_error.
     num_sing_vals_err = tf.math.count_nonzero(
-        tf.cast(trunc_errs > abs_max_truncation_error, dtype=tf.int32))
+      tf.cast(trunc_errs > abs_max_truncation_error, dtype=tf.int32)
+    )
   else:
     num_sing_vals_err = max_singular_values
 
@@ -127,10 +127,7 @@ def svd(
 
 
 def qr(
-    tf: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool
+  tf: Any, tensor: Tensor, pivot_axis: int, non_negative_diagonal: bool
 ) -> Tuple[Tensor, Tensor]:
   """Computes the QR decomposition of a tensor.
 
@@ -162,9 +159,7 @@ def qr(
   left_dims = tf.shape(tensor)[:pivot_axis]
   right_dims = tf.shape(tensor)[pivot_axis:]
 
-  tensor = tf.reshape(tensor,
-                      [tf.reduce_prod(left_dims),
-                       tf.reduce_prod(right_dims)])
+  tensor = tf.reshape(tensor, [tf.reduce_prod(left_dims), tf.reduce_prod(right_dims)])
   q, r = tf.linalg.qr(tensor)
   if non_negative_diagonal:
     phases = tf.math.sign(tf.linalg.diag_part(r))
@@ -177,10 +172,7 @@ def qr(
 
 
 def rq(
-    tf: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool
+  tf: Any, tensor: Tensor, pivot_axis: int, non_negative_diagonal: bool
 ) -> Tuple[Tensor, Tensor]:
   """Computes the RQ decomposition of a tensor.
 
@@ -212,16 +204,16 @@ def rq(
   left_dims = tf.shape(tensor)[:pivot_axis]
   right_dims = tf.shape(tensor)[pivot_axis:]
 
-  tensor = tf.reshape(tensor,
-                      [tf.reduce_prod(left_dims),
-                       tf.reduce_prod(right_dims)])
+  tensor = tf.reshape(tensor, [tf.reduce_prod(left_dims), tf.reduce_prod(right_dims)])
   q, r = tf.linalg.qr(tf.math.conj(tf.transpose(tensor)))
   if non_negative_diagonal:
     phases = tf.math.sign(tf.linalg.diag_part(r))
     q = q * phases
     r = phases[:, None] * r
-  r, q = tf.math.conj(tf.transpose(r)), tf.math.conj(
-      tf.transpose(q))  #M=r*q at this point
+  r, q = (
+    tf.math.conj(tf.transpose(r)),
+    tf.math.conj(tf.transpose(q)),
+  )  # M=r*q at this point
   center_dim = tf.shape(r)[1]
   r = tf.reshape(r, tf.concat([left_dims, [center_dim]], axis=-1))
   q = tf.reshape(q, tf.concat([[center_dim], right_dims], axis=-1))

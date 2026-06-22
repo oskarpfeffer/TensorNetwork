@@ -11,7 +11,8 @@ from tensornetwork.backend_contextmanager import DefaultBackend
 from tensornetwork import backends
 from tensornetwork.backends.numpy import numpy_backend
 from tensornetwork.backends.jax import jax_backend
-#pylint: disable=no-member
+
+# pylint: disable=no-member
 config.update("jax_enable_x64", True)
 
 np_real = [np.float32, np.float16, np.float64]
@@ -19,13 +20,16 @@ np_float = np_real + [np.complex64, np.complex128]
 np_int = [np.int8, np.int16, np.int32, np.int64]
 np_uint = [np.uint8, np.uint16, np.uint32, np.uint64]
 np_dtypes = {
-    "real": np_real,
-    "float": np_float,
-    "rand": np_float,
-    "int": np_int + np_uint,
-    "all": np_real + np_int + np_uint + [
-        None,
-    ]
+  "real": np_real,
+  "float": np_float,
+  "rand": np_float,
+  "int": np_int + np_uint,
+  "all": np_real
+  + np_int
+  + np_uint
+  + [
+    None,
+  ],
 }
 
 tf_real = [tf.float32, tf.float16, tf.float64]
@@ -33,35 +37,42 @@ tf_float = tf_real + [tf.complex64, tf.complex128]
 tf_int = [tf.int8, tf.int16, tf.int32, tf.int64]
 tf_uint = [tf.uint8, tf.uint16, tf.uint32, tf.uint64]
 tf_dtypes = {
-    "real": tf_real,
-    "float": tf_float,
-    "rand": tf_real + [
-        None,
-    ],
-    "int": tf_int + tf_uint,
-    "all": tf_real + tf_int + tf_uint + [
-        None,
-    ]
+  "real": tf_real,
+  "float": tf_float,
+  "rand": tf_real
+  + [
+    None,
+  ],
+  "int": tf_int + tf_uint,
+  "all": tf_real
+  + tf_int
+  + tf_uint
+  + [
+    None,
+  ],
 }
 
 torch_float = [torch.float32, torch.float16, torch.float64]
 torch_int = [torch.int8, torch.int16, torch.int32, torch.int64]
 torch_uint = [torch.uint8]
 torch_dtypes = {
-    "real": torch_float,
-    "float": torch_float,
-    "rand": [torch.float32, torch.float64, None],
-    "int": torch_int + torch_uint,
-    "all": torch_float + torch_int + torch_uint + [
-        None,
-    ]
+  "real": torch_float,
+  "float": torch_float,
+  "rand": [torch.float32, torch.float64, None],
+  "int": torch_int + torch_uint,
+  "all": torch_float
+  + torch_int
+  + torch_uint
+  + [
+    None,
+  ],
 }
 
 dtypes = {
-    "pytorch": torch_dtypes,
-    "jax": np_dtypes,
-    "numpy": np_dtypes,
-    "tensorflow": tf_dtypes
+  "pytorch": torch_dtypes,
+  "jax": np_dtypes,
+  "numpy": np_dtypes,
+  "tensorflow": tf_dtypes,
 }
 
 
@@ -76,7 +87,8 @@ def test_eye(backend):
   backend_obj = backends.backend_factory.get_backend(backend)
   for dtype in dtypes[backend]["all"]:
     tnI = node_linalg.eye(
-        N, dtype=dtype, M=M, name=name, axis_names=axis_names, backend=backend)
+      N, dtype=dtype, M=M, name=name, axis_names=axis_names, backend=backend
+    )
     npI = backend_obj.eye(N, dtype=dtype, M=M)
     np.testing.assert_allclose(tnI.tensor, npI)
     assert tnI.name == name
@@ -96,7 +108,8 @@ def test_zeros(backend):
   backend_obj = backends.backend_factory.get_backend(backend)
   for dtype in dtypes[backend]["all"]:
     tnI = node_linalg.zeros(
-        shape, dtype=dtype, name=name, axis_names=axis_names, backend=backend)
+      shape, dtype=dtype, name=name, axis_names=axis_names, backend=backend
+    )
     npI = backend_obj.zeros(shape, dtype=dtype)
     np.testing.assert_allclose(tnI.tensor, npI)
     assert tnI.name == name
@@ -116,7 +129,8 @@ def test_ones(backend):
   backend_obj = backends.backend_factory.get_backend(backend)
   for dtype in dtypes[backend]["all"]:
     tnI = node_linalg.ones(
-        shape, dtype=dtype, name=name, axis_names=axis_names, backend=backend)
+      shape, dtype=dtype, name=name, axis_names=axis_names, backend=backend
+    )
     npI = backend_obj.ones(shape, dtype=dtype)
     np.testing.assert_allclose(tnI.tensor, npI)
     assert tnI.name == name
@@ -138,12 +152,8 @@ def test_randn(backend):
   backend_obj = backends.backend_factory.get_backend(backend)
   for dtype in dtypes[backend]["rand"]:
     tnI = node_linalg.randn(
-        shape,
-        dtype=dtype,
-        name=name,
-        axis_names=axis_names,
-        backend=backend,
-        seed=seed)
+      shape, dtype=dtype, name=name, axis_names=axis_names, backend=backend, seed=seed
+    )
     npI = backend_obj.randn(shape, dtype=dtype, seed=seed)
     np.testing.assert_allclose(tnI.tensor, npI)
     assert tnI.name == name
@@ -166,15 +176,17 @@ def test_random_uniform(backend):
   backend_obj = backends.backend_factory.get_backend(backend)
   for dtype in dtypes[backend]["rand"]:
     tnI = node_linalg.random_uniform(
-        shape,
-        dtype=dtype,
-        name=name,
-        axis_names=axis_names,
-        backend=backend,
-        seed=seed,
-        boundaries=boundaries)
+      shape,
+      dtype=dtype,
+      name=name,
+      axis_names=axis_names,
+      backend=backend,
+      seed=seed,
+      boundaries=boundaries,
+    )
     npI = backend_obj.random_uniform(
-        shape, dtype=dtype, seed=seed, boundaries=boundaries)
+      shape, dtype=dtype, seed=seed, boundaries=boundaries
+    )
     np.testing.assert_allclose(tnI.tensor, npI)
     assert tnI.name == name
     edges = tnI.get_all_dangling()
@@ -213,7 +225,8 @@ def test_kron_raises(backend):
     A = Node(np.ones((2, 2, 2)))
     B = Node(np.ones((2, 2, 2)))
     with pytest.raises(
-        ValueError, match="All operator tensors must have an even order."):
+      ValueError, match="All operator tensors must have an even order."
+    ):
       node_linalg.kron([A, B])
 
 

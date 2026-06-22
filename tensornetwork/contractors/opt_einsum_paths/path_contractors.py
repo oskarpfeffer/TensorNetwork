@@ -16,27 +16,34 @@
 
 import functools
 import opt_einsum
-from tensornetwork.network_operations import (check_connected, get_all_edges,
-                                              get_subgraph_dangling,
-                                              contract_trace_edges,
-                                              redirect_edge)
+from tensornetwork.network_operations import (
+  check_connected,
+  get_all_edges,
+  get_subgraph_dangling,
+  contract_trace_edges,
+  redirect_edge,
+)
 
-from tensornetwork.network_components import (get_all_nondangling,
-                                              contract_parallel,
-                                              contract_between)
+from tensornetwork.network_components import (
+  get_all_nondangling,
+  contract_parallel,
+  contract_between,
+)
 from tensornetwork.network_components import Edge, AbstractNode
 from tensornetwork.contractors.opt_einsum_paths import utils
 from typing import Any, Optional, Sequence, Iterable, Text, Tuple, List
 
-#TODO (martin): add return types of functions back once TensorNetwork is gone
+# TODO (martin): add return types of functions back once TensorNetwork is gone
 #               remove _base_network
 #               _base_nodes -> base
 
 
-def base(nodes: Iterable[AbstractNode],
-         algorithm: utils.Algorithm,
-         output_edge_order: Optional[Sequence[Edge]] = None,
-         ignore_edge_order: bool = False) -> AbstractNode:
+def base(
+  nodes: Iterable[AbstractNode],
+  algorithm: utils.Algorithm,
+  output_edge_order: Optional[Sequence[Edge]] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Base method for all `opt_einsum` contractors.
 
   Args:
@@ -55,23 +62,27 @@ def base(nodes: Iterable[AbstractNode],
   """
   nodes_set = set(nodes)
   edges = get_all_edges(nodes_set)
-  #output edge order has to be determinded before any contraction
-  #(edges are refreshed after contractions)
+  # output edge order has to be determinded before any contraction
+  # (edges are refreshed after contractions)
 
   if not ignore_edge_order:
     if output_edge_order is None:
       output_edge_order = list(get_subgraph_dangling(nodes))
       if len(output_edge_order) > 1:
-        raise ValueError("The final node after contraction has more than "
-                         "one remaining edge. In this case `output_edge_order` "
-                         "has to be provided.")
+        raise ValueError(
+          "The final node after contraction has more than "
+          "one remaining edge. In this case `output_edge_order` "
+          "has to be provided."
+        )
 
     if set(output_edge_order) != get_subgraph_dangling(nodes):
-      raise ValueError("output edges are not equal to the remaining "
-                       "non-contracted edges of the final node.")
+      raise ValueError(
+        "output edges are not equal to the remaining "
+        "non-contracted edges of the final node."
+      )
 
   for edge in edges:
-    if not edge.is_disabled:  #if its disabled we already contracted it
+    if not edge.is_disabled:  # if its disabled we already contracted it
       if edge.is_trace():
         nodes_set.remove(edge.node1)
         nodes_set.add(contract_parallel(edge))
@@ -97,10 +108,12 @@ def base(nodes: Iterable[AbstractNode],
   return final_node
 
 
-def optimal(nodes: Iterable[AbstractNode],
-            output_edge_order: Optional[Sequence[Edge]] = None,
-            memory_limit: Optional[int] = None,
-            ignore_edge_order: bool = False) -> AbstractNode:
+def optimal(
+  nodes: Iterable[AbstractNode],
+  output_edge_order: Optional[Sequence[Edge]] = None,
+  memory_limit: Optional[int] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Optimal contraction order via `opt_einsum`.
 
   This method will find the truly optimal contraction order via
@@ -122,15 +135,18 @@ def optimal(nodes: Iterable[AbstractNode],
     The final node after full contraction.
   """
   alg = functools.partial(
-      opt_einsum.paths.dynamic_programming, memory_limit=memory_limit)
+    opt_einsum.paths.dynamic_programming, memory_limit=memory_limit
+  )
   return base(nodes, alg, output_edge_order, ignore_edge_order)
 
 
-def branch(nodes: Iterable[AbstractNode],
-           output_edge_order: Optional[Sequence[Edge]] = None,
-           memory_limit: Optional[int] = None,
-           nbranch: Optional[int] = None,
-           ignore_edge_order: bool = False) -> AbstractNode:
+def branch(
+  nodes: Iterable[AbstractNode],
+  output_edge_order: Optional[Sequence[Edge]] = None,
+  memory_limit: Optional[int] = None,
+  nbranch: Optional[int] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Branch contraction path via `opt_einsum`.
 
   This method uses the DFS approach of `optimal` while sorting potential
@@ -158,14 +174,17 @@ def branch(nodes: Iterable[AbstractNode],
     The final node after full contraction.
   """
   alg = functools.partial(
-      opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=nbranch)
+    opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=nbranch
+  )
   return base(nodes, alg, output_edge_order, ignore_edge_order)
 
 
-def greedy(nodes: Iterable[AbstractNode],
-           output_edge_order: Optional[Sequence[Edge]] = None,
-           memory_limit: Optional[int] = None,
-           ignore_edge_order: bool = False) -> AbstractNode:
+def greedy(
+  nodes: Iterable[AbstractNode],
+  output_edge_order: Optional[Sequence[Edge]] = None,
+  memory_limit: Optional[int] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Greedy contraction path via `opt_einsum`.
 
   This provides a more efficient strategy than `optimal` for finding
@@ -194,10 +213,12 @@ def greedy(nodes: Iterable[AbstractNode],
 
 
 # pylint: disable=too-many-return-statements
-def auto(nodes: Iterable[AbstractNode],
-         output_edge_order: Optional[Sequence[Edge]] = None,
-         memory_limit: Optional[int] = None,
-         ignore_edge_order: bool = False) -> AbstractNode:
+def auto(
+  nodes: Iterable[AbstractNode],
+  output_edge_order: Optional[Sequence[Edge]] = None,
+  memory_limit: Optional[int] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Chooses one of the above algorithms according to network size.
 
   Default behavior is based on `opt_einsum`'s `auto` contractor.
@@ -216,20 +237,20 @@ def auto(nodes: Iterable[AbstractNode],
     Final node after full contraction.
   """
 
-  n = len(list(nodes))  #pytype thing
+  n = len(list(nodes))  # pytype thing
   _nodes = nodes
   if n <= 0:
     raise ValueError("Cannot contract empty tensor network.")
   if n == 1:
     if not ignore_edge_order:
       if output_edge_order is None:
-        output_edge_order = list(
-            (get_all_edges(_nodes) - get_all_nondangling(_nodes)))
+        output_edge_order = list((get_all_edges(_nodes) - get_all_nondangling(_nodes)))
         if len(output_edge_order) > 1:
           raise ValueError(
-              "The final node after contraction has more than "
-              "one dangling edge. In this case `output_edge_order` "
-              "has to be provided.")
+            "The final node after contraction has more than "
+            "one dangling edge. In this case `output_edge_order` "
+            "has to be provided."
+          )
 
     edges = get_all_nondangling(_nodes)
     if edges:
@@ -245,31 +266,36 @@ def auto(nodes: Iterable[AbstractNode],
     return optimal(nodes, output_edge_order, memory_limit, ignore_edge_order)
   if n < 7:
     return branch(
-        nodes,
-        output_edge_order=output_edge_order,
-        memory_limit=memory_limit,
-        ignore_edge_order=ignore_edge_order)
+      nodes,
+      output_edge_order=output_edge_order,
+      memory_limit=memory_limit,
+      ignore_edge_order=ignore_edge_order,
+    )
   if n < 9:
     return branch(
-        nodes,
-        output_edge_order=output_edge_order,
-        memory_limit=memory_limit,
-        nbranch=2,
-        ignore_edge_order=ignore_edge_order)
+      nodes,
+      output_edge_order=output_edge_order,
+      memory_limit=memory_limit,
+      nbranch=2,
+      ignore_edge_order=ignore_edge_order,
+    )
   if n < 15:
     return branch(
-        nodes,
-        output_edge_order=output_edge_order,
-        nbranch=1,
-        ignore_edge_order=ignore_edge_order)
+      nodes,
+      output_edge_order=output_edge_order,
+      nbranch=1,
+      ignore_edge_order=ignore_edge_order,
+    )
   return greedy(nodes, output_edge_order, memory_limit, ignore_edge_order)
 
 
-def custom(nodes: Iterable[AbstractNode],
-           optimizer: Any,
-           output_edge_order: Sequence[Edge] = None,
-           memory_limit: Optional[int] = None,
-           ignore_edge_order: bool = False) -> AbstractNode:
+def custom(
+  nodes: Iterable[AbstractNode],
+  optimizer: Any,
+  output_edge_order: Sequence[Edge] = None,
+  memory_limit: Optional[int] = None,
+  ignore_edge_order: bool = False,
+) -> AbstractNode:
   """Uses a custom path optimizer created by the user to calculate paths.
 
   The custom path optimizer should inherit `opt_einsum`'s `PathOptimizer`.
@@ -297,10 +323,10 @@ def custom(nodes: Iterable[AbstractNode],
 
 
 def path_solver(
-    algorithm: Text,
-    nodes: Iterable[AbstractNode],
-    memory_limit: Optional[int] = None,
-    nbranch: Optional[int] = None
+  algorithm: Text,
+  nodes: Iterable[AbstractNode],
+  memory_limit: Optional[int] = None,
+  nbranch: Optional[int] = None,
 ) -> Tuple[List[Tuple[int, int]], List[AbstractNode]]:
   """Calculates the contraction paths using `opt_einsum` methods.
 
@@ -318,32 +344,37 @@ def path_solver(
   """
   if algorithm == "optimal":
     alg = functools.partial(
-        opt_einsum.paths.dynamic_programming, memory_limit=memory_limit)
+      opt_einsum.paths.dynamic_programming, memory_limit=memory_limit
+    )
   elif algorithm == "branch":
     alg = functools.partial(
-        opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=nbranch)
+      opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=nbranch
+    )
   elif algorithm == "greedy":
     alg = functools.partial(opt_einsum.paths.greedy, memory_limit=memory_limit)
   elif algorithm == "auto":
-    n = len(list(nodes))  #pytype thing
+    n = len(list(nodes))  # pytype thing
     _nodes = nodes
     if n <= 1:
       return []
     if n < 5:
       alg = functools.partial(
-          opt_einsum.paths.dynamic_programming, memory_limit=memory_limit)
+        opt_einsum.paths.dynamic_programming, memory_limit=memory_limit
+      )
     if n < 7:
       alg = functools.partial(
-          opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=None)
+        opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=None
+      )
     if n < 9:
       alg = functools.partial(
-          opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=2)
+        opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=2
+      )
     if n < 15:
       alg = functools.partial(
-          opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=1)
+        opt_einsum.paths.branch, memory_limit=memory_limit, nbranch=1
+      )
     else:
-      alg = functools.partial(
-          opt_einsum.paths.greedy, memory_limit=memory_limit)
+      alg = functools.partial(opt_einsum.paths.greedy, memory_limit=memory_limit)
   else:
     raise ValueError("algorithm {algorithm} not implemented")
 
@@ -351,9 +382,11 @@ def path_solver(
   return path
 
 
-def contract_path(path: Tuple[List[Tuple[int,
-                                         int]]], nodes: Iterable[AbstractNode],
-                  output_edge_order: Sequence[Edge]) -> AbstractNode:
+def contract_path(
+  path: Tuple[List[Tuple[int, int]]],
+  nodes: Iterable[AbstractNode],
+  output_edge_order: Sequence[Edge],
+) -> AbstractNode:
   """Contract `nodes` using `path`.
 
   Args:
@@ -367,7 +400,7 @@ def contract_path(path: Tuple[List[Tuple[int,
   """
   edges = get_all_edges(nodes)
   for edge in edges:
-    if not edge.is_disabled:  #if its disabled we already contracted it
+    if not edge.is_disabled:  # if its disabled we already contracted it
       if edge.is_trace():
         contract_parallel(edge)
 
@@ -393,11 +426,10 @@ def contract_path(path: Tuple[List[Tuple[int,
       new_node = contract_trace_edges(node)
       nodes.append(new_node)
 
-
   # if the final node has more than one edge,
   # output_edge_order has to be specified
   final_node = nodes[0]  # nodes were connected, we checked this
-  #some contractors miss trace edges
+  # some contractors miss trace edges
   final_node = contract_trace_edges(final_node)
   final_node.reorder_edges(output_edge_order)
   return final_node

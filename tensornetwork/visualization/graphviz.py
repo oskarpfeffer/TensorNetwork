@@ -18,11 +18,13 @@ from typing import Optional, Text, Iterable
 from tensornetwork.network_components import AbstractNode
 
 
-#pylint: disable=no-member
-def to_graphviz(nodes: Iterable[AbstractNode],
-                graph: Optional[graphviz.Graph] = None,
-                include_all_names: bool = False,
-                engine: Text = "neato") -> graphviz.Graph:
+# pylint: disable=no-member
+def to_graphviz(
+  nodes: Iterable[AbstractNode],
+  graph: Optional[graphviz.Graph] = None,
+  include_all_names: bool = False,
+  engine: Text = "neato",
+) -> graphviz.Graph:
   """Create a graphviz Graph that is isomorphic to the given TensorNetwork.
 
   Args:
@@ -38,8 +40,8 @@ def to_graphviz(nodes: Iterable[AbstractNode],
     The `graphviz.Graph` object.
   """
   if graph is None:
-    #pylint: disable=no-member
-    graph = graphviz.Graph('G', engine=engine)
+    # pylint: disable=no-member
+    graph = graphviz.Graph("G", engine=engine)
   for node in nodes:
     if not node.name.startswith("__") or include_all_names:
       label = node.name
@@ -60,9 +62,8 @@ def to_graphviz(nodes: Iterable[AbstractNode],
         # We need to create an invisible node for the dangling edge
         # to connect to.
         graph.node(
-            "{}_{}".format(id(node), i),
-            label="",
-            _attributes={"style": "invis"})
+          "{}_{}".format(id(node), i), label="", _attributes={"style": "invis"}
+        )
         graph.edge("{}_{}".format(id(node), i), str(id(node)), label=edge_label)
       else:
         graph.edge(str(id(edge.node1)), str(id(edge.node2)), label=edge_label)

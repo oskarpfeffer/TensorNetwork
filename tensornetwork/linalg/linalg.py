@@ -17,11 +17,11 @@ from tensornetwork.tensor import Tensor
 
 
 def svd(
-    tensor: Tensor,
-    pivot_axis: int = -1,
-    max_singular_values: Optional[int] = None,
-    max_truncation_error: Optional[float] = None,
-    relative: Optional[bool] = False
+  tensor: Tensor,
+  pivot_axis: int = -1,
+  max_singular_values: Optional[int] = None,
+  max_truncation_error: Optional[float] = None,
+  relative: Optional[bool] = False,
 ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
   """Computes the singular value decomposition (SVD) of a tensor.
 
@@ -73,18 +73,19 @@ def svd(
             truncation).
   """
   backend = tensor.backend
-  out = backend.svd(tensor.array, pivot_axis,
-                    max_singular_values=max_singular_values,
-                    max_truncation_error=max_truncation_error,
-                    relative=relative)
+  out = backend.svd(
+    tensor.array,
+    pivot_axis,
+    max_singular_values=max_singular_values,
+    max_truncation_error=max_truncation_error,
+    relative=relative,
+  )
   tensors = [Tensor(t, backend=backend) for t in out]
   return tuple(tensors)
 
 
 def qr(
-    tensor: Tensor,
-    pivot_axis: int = -1,
-    non_negative_diagonal: bool = False
+  tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
 ) -> Tuple[Tensor, Tensor]:
   """
   QR reshapes tensor into a matrix and then decomposes that matrix into the
@@ -122,16 +123,15 @@ def qr(
     Q, R : The decomposed Tensor with dimensions as specified above.
   """
   backend = tensor.backend
-  out = backend.qr(tensor.array, pivot_axis=pivot_axis,
-                   non_negative_diagonal=non_negative_diagonal)
+  out = backend.qr(
+    tensor.array, pivot_axis=pivot_axis, non_negative_diagonal=non_negative_diagonal
+  )
   Q, R = [Tensor(t, backend=backend) for t in out]
   return Q, R
 
 
 def rq(
-    tensor: Tensor,
-    pivot_axis: int = -1,
-    non_negative_diagonal: bool = False
+  tensor: Tensor, pivot_axis: int = -1, non_negative_diagonal: bool = False
 ) -> Tuple[Tensor, Tensor]:
   """
   RQ reshapes tensor into a matrix and then decomposes that matrix into the
@@ -169,8 +169,9 @@ def rq(
     R, Q : The decomposed Tensor with dimensions as specified above.
   """
   backend = tensor.backend
-  out = backend.rq(tensor.array, pivot_axis=pivot_axis,
-                   non_negative_diagonal=non_negative_diagonal)
+  out = backend.rq(
+    tensor.array, pivot_axis=pivot_axis, non_negative_diagonal=non_negative_diagonal
+  )
   R, Q = [Tensor(t, backend=backend) for t in out]
   return R, Q
 
@@ -191,8 +192,7 @@ def eigh(matrix: Tensor) -> Tuple[Tensor, Tensor]:
 
 
 def norm(tensor: Tensor) -> Tensor:
-  """Calculate the L2-norm of the elements of `tensor`
-  """
+  """Calculate the L2-norm of the elements of `tensor`"""
   backend = tensor.backend
   out = backend.norm(tensor.array)
   return out

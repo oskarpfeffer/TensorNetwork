@@ -18,7 +18,7 @@ from tensornetwork import ncon_interface
 
 
 def _check_backends(tensors: Sequence[Tensor], fname: str) -> Tuple[bool, str]:
-  """ Checks that each of tensors has the same backend, returning True and an
+  """Checks that each of tensors has the same backend, returning True and an
       empty string if so, or False and an error string if not.
   Args:
     tensors: The list of tensors whose backends to check.
@@ -37,8 +37,9 @@ def _check_backends(tensors: Sequence[Tensor], fname: str) -> Tuple[bool, str]:
   return all_backends_same, errstr
 
 
-def tensordot(a: Tensor, b: Tensor,
-              axes: Union[int, Sequence[Sequence[int]]]) -> Tensor:
+def tensordot(
+  a: Tensor, b: Tensor, axes: Union[int, Sequence[Sequence[int]]]
+) -> Tensor:
   """Do a tensordot (contraction) of Tensors `a` and `b` over the given axes.
   The behaviour of this function largely matches that of np.tensordot.
 
@@ -75,7 +76,7 @@ def reshape(tensor: Tensor, new_shape: Sequence[int]) -> Tensor:
 
 
 def transpose(tensor: Tensor, perm: Optional[Sequence[int]] = None) -> Tensor:
-  """ Return a new `Tensor` transposed according to the permutation set
+  """Return a new `Tensor` transposed according to the permutation set
   by `axes`. By default the axes are reversed.
   Args:
     axes: The permutation. If None (default) the index order is reversed.
@@ -85,8 +86,9 @@ def transpose(tensor: Tensor, perm: Optional[Sequence[int]] = None) -> Tensor:
   return tensor.transpose(perm=perm)
 
 
-def take_slice(tensor: Tensor, start_indices: Tuple[int, ...],
-               slice_sizes: Tuple[int, ...]) -> Tensor:
+def take_slice(
+  tensor: Tensor, start_indices: Tuple[int, ...], slice_sizes: Tuple[int, ...]
+) -> Tensor:
   """Obtains a slice of a Tensor based on start_indices and slice_sizes.
 
   Args:
@@ -151,7 +153,7 @@ def conj(tensor: Tensor) -> Tensor:
 
 
 def hconj(tensor: Tensor, perm: Optional[Sequence[int]] = None) -> Tensor:
-  """ The Hermitian conjugated tensor; e.g. the complex conjugate tranposed
+  """The Hermitian conjugated tensor; e.g. the complex conjugate tranposed
   by the permutation set be `axes`. By default the axes are reversed.
   Args:
     tensor: The Tensor to conjugate.
@@ -210,8 +212,9 @@ def log(tensor: Tensor) -> Tensor:
   return Tensor(out_array, backend=tensor.backend)
 
 
-def diagonal(tensor: Tensor, offset: int = 0, axis1: int = -2,
-             axis2: int = -1) -> Tensor:
+def diagonal(
+  tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1
+) -> Tensor:
   """
   Extracts the offset'th diagonal from the matrix slice of tensor indexed
   by (axis1, axis2).
@@ -225,8 +228,7 @@ def diagonal(tensor: Tensor, offset: int = 0, axis1: int = -2,
     out  : A 1D Tensor storing the elements of the selected diagonal.
   """
   backend = tensor.backend
-  result = backend.diagonal(tensor.array, offset=offset, axis1=axis1,
-                            axis2=axis2)
+  result = backend.diagonal(tensor.array, offset=offset, axis1=axis1, axis2=axis2)
   return Tensor(result, backend=backend)
 
 
@@ -247,8 +249,7 @@ def diagflat(tensor: Tensor, k: int = 0) -> Tensor:
   return Tensor(result, backend=backend)
 
 
-def trace(tensor: Tensor, offset: int = 0, axis1: int = -2,
-          axis2: int = -1) -> Tensor:
+def trace(tensor: Tensor, offset: int = 0, axis1: int = -2, axis2: int = -1) -> Tensor:
   """Calculate the sum along diagonal entries of the given Tensor. The
      entries of the offset`th diagonal of the matrix slice of tensor indexed by
      (axis1, axis2) are summed.
@@ -262,14 +263,12 @@ def trace(tensor: Tensor, offset: int = 0, axis1: int = -2,
     out: The trace.
   """
   backend = tensor.backend
-  result = backend.trace(tensor.array, offset=offset, axis1=axis1,
-                         axis2=axis2)
+  result = backend.trace(tensor.array, offset=offset, axis1=axis1, axis2=axis2)
   return Tensor(result, backend=backend)
 
 
 def sign(tensor: Tensor) -> Tensor:
-  """ Returns the sign of the elements of Tensor.
-  """
+  """Returns the sign of the elements of Tensor."""
   backend = tensor.backend
   result = backend.sign(tensor.array)
   return Tensor(result, backend=backend)
@@ -277,20 +276,19 @@ def sign(tensor: Tensor) -> Tensor:
 
 # pylint: disable=redefined-builtin
 def abs(tensor: Tensor) -> Tensor:
-  """ Returns the absolute value of the elements of Tensor.
-  """
+  """Returns the absolute value of the elements of Tensor."""
   backend = tensor.backend
   result = backend.abs(tensor.array)
   return Tensor(result, backend=backend)
 
 
 def pivot(tensor: Tensor, pivot_axis: int = -1) -> Tensor:
-  """ Reshapes tensor into a matrix about the pivot_axis. Equivalent to
-      tensor.reshape(prod(tensor.shape[:pivot_axis]),
-                     prod(tensor.shape[pivot_axis:])).
-    Args:
-      tensor: The input tensor.
-      pivot_axis: Axis to pivot around.
+  """Reshapes tensor into a matrix about the pivot_axis. Equivalent to
+    tensor.reshape(prod(tensor.shape[:pivot_axis]),
+                   prod(tensor.shape[pivot_axis:])).
+  Args:
+    tensor: The input tensor.
+    pivot_axis: Axis to pivot around.
   """
   backend = tensor.backend
   result = backend.pivot(tensor.array, pivot_axis=pivot_axis)
@@ -300,18 +298,18 @@ def pivot(tensor: Tensor, pivot_axis: int = -1) -> Tensor:
 def kron(tensorA: Tensor, tensorB: Tensor) -> Tensor:
   """
   Compute the (tensor) kronecker product between `tensorA` and
-  `tensorB`. `tensorA` and `tensorB` can be tensors of any 
+  `tensorB`. `tensorA` and `tensorB` can be tensors of any
   even order (i.e. `tensorA.ndim % 2 == 0`, `tensorB.ndim % 2 == 0`).
-  The returned tensor has index ordering such that when reshaped into 
-  a matrix with `pivot =t ensorA.ndim//2 + tensorB.ndim//2`, 
-  the resulting matrix is identical to the result of numpy's 
-  `np.kron(matrixA, matrixB)`, with `matrixA, matrixB` matrices 
-  obtained from reshaping `tensorA` and `tensorB` into matrices with 
+  The returned tensor has index ordering such that when reshaped into
+  a matrix with `pivot =t ensorA.ndim//2 + tensorB.ndim//2`,
+  the resulting matrix is identical to the result of numpy's
+  `np.kron(matrixA, matrixB)`, with `matrixA, matrixB` matrices
+  obtained from reshaping `tensorA` and `tensorB` into matrices with
   `pivotA = tensorA.ndim//2`, `pivotB = tensorB.ndim//2`
 
   Example:
   `tensorA.shape = (2,3,4,5)`, `tensorB.shape(6,7)` ->
-  `kron(tensorA, tensorB).shape = (2, 3, 6, 4, 5, 7)` 
+  `kron(tensorA, tensorB).shape = (2, 3, 6, 4, 5, 7)`
 
   Args:
     tensorA: A `Tensor`.
@@ -328,15 +326,21 @@ def kron(tensorA: Tensor, tensorB: Tensor) -> Tensor:
     raise ValueError(errstr)
   ndimA, ndimB = tensorA.ndim, tensorB.ndim
   if ndimA % 2 != 0:
-    raise ValueError(f"kron only supports tensors with even number of legs."
-                     f"found tensorA.ndim = {ndimA}")
+    raise ValueError(
+      f"kron only supports tensors with even number of legs."
+      f"found tensorA.ndim = {ndimA}"
+    )
   if ndimB % 2 != 0:
-    raise ValueError(f"kron only supports tensors with even number of legs."
-                     f"found tensorB.ndim = {ndimB}")
+    raise ValueError(
+      f"kron only supports tensors with even number of legs."
+      f"found tensorB.ndim = {ndimB}"
+    )
   backend = tensorA.backend
   incoming = list(range(ndimA // 2)) + list(range(ndimA, ndimA + ndimB // 2))
   outgoing = list(range(ndimA // 2, ndimA)) + list(
-      range(ndimA + ndimB // 2, ndimA + ndimB))
+    range(ndimA + ndimB // 2, ndimA + ndimB)
+  )
   arr = backend.transpose(
-      backend.outer_product(tensorA.array, tensorB.array), incoming + outgoing)
+    backend.outer_product(tensorA.array, tensorB.array), incoming + outgoing
+  )
   return Tensor(arr, backend=backend)

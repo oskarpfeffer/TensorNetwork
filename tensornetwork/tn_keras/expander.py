@@ -11,7 +11,7 @@ import math
 
 
 # pytype: disable=module-attr
-@tf.keras.utils.register_keras_serializable(package='tensornetwork') # pylint: disable=no-member
+@tf.keras.utils.register_keras_serializable(package="tensornetwork")  # pylint: disable=no-member
 # pytype: enable=module-attr
 class DenseExpander(Layer):
   """Expander TN layer. Greatly expands dimensionality of input.
@@ -37,9 +37,9 @@ class DenseExpander(Layer):
       # After the first layer, you don't need to specify
       # the size of the input anymore:
       model.add(
-        DenseExpander(exp_base=2, 
-                      num_nodes=2, 
-                      use_bias=True, 
+        DenseExpander(exp_base=2,
+                      num_nodes=2,
+                      use_bias=True,
                       activation='relu'))
 
   Args:
@@ -62,17 +62,19 @@ class DenseExpander(Layer):
                                               (exp_base**num_nodes))`.
   """
 
-  def __init__(self,
-               exp_base: int,
-               num_nodes: int,
-               use_bias: Optional[bool] = True,
-               activation: Optional[Text] = None,
-               kernel_initializer: Optional[Text] = 'glorot_uniform',
-               bias_initializer: Optional[Text] = 'zeros',
-               **kwargs) -> None:
+  def __init__(
+    self,
+    exp_base: int,
+    num_nodes: int,
+    use_bias: Optional[bool] = True,
+    activation: Optional[Text] = None,
+    kernel_initializer: Optional[Text] = "glorot_uniform",
+    bias_initializer: Optional[Text] = "zeros",
+    **kwargs,
+  ) -> None:
 
-    if 'input_shape' not in kwargs and 'input_dim' in kwargs:
-      kwargs['input_shape'] = (kwargs.pop('input_dim'),)
+    if "input_shape" not in kwargs and "input_dim" in kwargs:
+      kwargs["input_shape"] = (kwargs.pop("input_dim"),)
 
     super().__init__(**kwargs)
 
@@ -88,8 +90,9 @@ class DenseExpander(Layer):
     # Disable the attribute-defined-outside-init violations in this function
     # pylint: disable=attribute-defined-outside-init
     if input_shape[-1] is None:
-      raise ValueError('The last dimension of the inputs to `Dense` '
-                       'should be defined. Found `None`.')
+      raise ValueError(
+        "The last dimension of the inputs to `Dense` should be defined. Found `None`."
+      )
 
     super().build(input_shape)
 
@@ -97,24 +100,36 @@ class DenseExpander(Layer):
 
     for i in range(self.num_nodes):
       self.nodes.append(
-          self.add_weight(name=f'node_{i}',
-                          shape=(input_shape[-1], self.exp_base,
-                                 input_shape[-1]),
-                          trainable=True,
-                          initializer=self.kernel_initializer))
+        self.add_weight(
+          name=f"node_{i}",
+          shape=(input_shape[-1], self.exp_base, input_shape[-1]),
+          trainable=True,
+          initializer=self.kernel_initializer,
+        )
+      )
 
-    self.bias_var = self.add_weight(
-        name='bias',
+    self.bias_var = (
+      self.add_weight(
+        name="bias",
         shape=(self.output_dim,),
         trainable=True,
-        initializer=self.bias_initializer) if self.use_bias else None
+        initializer=self.bias_initializer,
+      )
+      if self.use_bias
+      else None
+    )
 
   def call(self, inputs: tf.Tensor, **kwargs) -> tf.Tensor:  # pylint: disable=unused-argument, arguments-differ
 
-    def f(x: tf.Tensor, nodes: List[Node], num_nodes: int, use_bias: bool,
-          bias_var: tf.Tensor) -> tf.Tensor:
+    def f(
+      x: tf.Tensor,
+      nodes: List[Node],
+      num_nodes: int,
+      use_bias: bool,
+      bias_var: tf.Tensor,
+    ) -> tf.Tensor:
 
-      state_node = tn.Node(x, name='xnode', backend="tensorflow")
+      state_node = tn.Node(x, name="xnode", backend="tensorflow")
       operating_edge = state_node[0]
 
       # The TN will be connected like this:
@@ -128,7 +143,7 @@ class DenseExpander(Layer):
       #    xxxxxxx
 
       for i in range(num_nodes):
-        op = tn.Node(nodes[i], name=f'node_{i}', backend="tensorflow")
+        op = tn.Node(nodes[i], name=f"node_{i}", backend="tensorflow")
         tn.connect(operating_edge, op[0])
         operating_edge = op[2]
         state_node = tn.contract_between(state_node, op)
@@ -143,11 +158,19 @@ class DenseExpander(Layer):
     input_shape = list(inputs.shape)
     inputs = tf.reshape(inputs, (-1, input_shape[-1]))
     result = tf.vectorized_map(
-        lambda vec: f(vec, self.nodes, self.num_nodes, self.use_bias, self.
-                      bias_var), inputs)
+      lambda vec: f(vec, self.nodes, self.num_nodes, self.use_bias, self.bias_var),
+      inputs,
+    )
     if self.activation is not None:
       result = self.activation(result)
-    result = tf.reshape(result, [-1] + input_shape[1:-1] + [self.output_dim,])
+    result = tf.reshape(
+      result,
+      [-1]
+      + input_shape[1:-1]
+      + [
+        self.output_dim,
+      ],
+    )
     return result
 
   def compute_output_shape(self, input_shape: List[int]) -> Tuple[int, int]:
@@ -165,18 +188,17 @@ class DenseExpander(Layer):
     config = {}
 
     # Include the Expander-specific arguments
-    args = ['exp_base', 'num_nodes', 'use_bias']
+    args = ["exp_base", "num_nodes", "use_bias"]
     for arg in args:
       config[arg] = getattr(self, arg)
 
     # Serialize the activation
-    config['activation'] = activations.serialize(getattr(self, 'activation'))
+    config["activation"] = activations.serialize(getattr(self, "activation"))
 
     # Serialize the initializers
-    initializers_list = ['kernel_initializer', 'bias_initializer']
+    initializers_list = ["kernel_initializer", "bias_initializer"]
     for initializer_arg in initializers_list:
-      config[initializer_arg] = initializers.serialize(
-          getattr(self, initializer_arg))
+      config[initializer_arg] = initializers.serialize(getattr(self, initializer_arg))
 
     # Get base config
     base_config = super().get_config()

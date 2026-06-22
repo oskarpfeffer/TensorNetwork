@@ -19,20 +19,21 @@ from tensornetwork.backends.jax import jax_backend
 from tensornetwork.backends.pytorch import pytorch_backend
 from tensornetwork.backends.symmetric import symmetric_backend
 from tensornetwork.backends import abstract_backend
+
 _BACKENDS = {
-    "tensorflow": tensorflow_backend.TensorFlowBackend,
-    "numpy": numpy_backend.NumPyBackend,
-    "jax": jax_backend.JaxBackend,
-    "pytorch": pytorch_backend.PyTorchBackend,
-    "symmetric": symmetric_backend.SymmetricBackend
+  "tensorflow": tensorflow_backend.TensorFlowBackend,
+  "numpy": numpy_backend.NumPyBackend,
+  "jax": jax_backend.JaxBackend,
+  "pytorch": pytorch_backend.PyTorchBackend,
+  "symmetric": symmetric_backend.SymmetricBackend,
 }
 
-#we instantiate each backend only once and store it here
+# we instantiate each backend only once and store it here
 _INSTANTIATED_BACKENDS = dict()
 
 
 def get_backend(
-    backend: Union[Text, abstract_backend.AbstractBackend]
+  backend: Union[Text, abstract_backend.AbstractBackend],
 ) -> abstract_backend.AbstractBackend:
   if isinstance(backend, abstract_backend.AbstractBackend):
     return backend

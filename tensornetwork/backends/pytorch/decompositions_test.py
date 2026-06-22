@@ -64,7 +64,8 @@ def test_max_singular_values():
   singular_values = np.array(range(10))
   val = unitary1.dot(np.diag(singular_values).dot(unitary2.T))
   u, s, vh, trun = decompositions.svd(
-      torch, torch.tensor(val), 1, max_singular_values=7)
+    torch, torch.tensor(val), 1, max_singular_values=7
+  )
   assert u.shape == (10, 7)
   assert s.shape == (7,)
   np.testing.assert_array_almost_equal(s, np.arange(9, 2, -1))
@@ -79,7 +80,8 @@ def test_max_truncation_error():
   singular_values = np.array(range(10))
   val = unitary1.dot(np.diag(singular_values).dot(unitary2.T))
   u, s, vh, trun = decompositions.svd(
-      torch, torch.Tensor(val), 1, max_truncation_error=math.sqrt(5.1))
+    torch, torch.Tensor(val), 1, max_truncation_error=math.sqrt(5.1)
+  )
   assert u.shape == (10, 7)
   assert s.shape == (7,)
   np.testing.assert_array_almost_equal(s, np.arange(9, 2, -1), decimal=5)
@@ -92,16 +94,18 @@ def test_max_truncation_error_relative():
   relative = np.diag([2.0, 1.0, 0.2, 0.1])
   max_truncation_err = 0.2
   _, _, _, trunc_sv_absolute = decompositions.svd(
-      torch,
-      torch.Tensor(absolute),
-      1,
-      max_truncation_error=max_truncation_err,
-      relative=False)
+    torch,
+    torch.Tensor(absolute),
+    1,
+    max_truncation_error=max_truncation_err,
+    relative=False,
+  )
   _, _, _, trunc_sv_relative = decompositions.svd(
-      torch,
-      torch.Tensor(relative),
-      1,
-      max_truncation_error=max_truncation_err,
-      relative=True)
+    torch,
+    torch.Tensor(relative),
+    1,
+    max_truncation_error=max_truncation_err,
+    relative=True,
+  )
   np.testing.assert_almost_equal(trunc_sv_absolute, [0.1])
   np.testing.assert_almost_equal(trunc_sv_relative, [0.2, 0.1])

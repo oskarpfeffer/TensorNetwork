@@ -20,12 +20,13 @@ Tensor = Any
 
 
 def svd(
-    torch: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    max_singular_values: Optional[int] = None,
-    max_truncation_error: Optional[float] = None,
-    relative: Optional[bool] = False) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+  torch: Any,
+  tensor: Tensor,
+  pivot_axis: int,
+  max_singular_values: Optional[int] = None,
+  max_truncation_error: Optional[float] = None,
+  relative: Optional[bool] = False,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
   """Computes the singular value decomposition (SVD) of a tensor.
 
   The SVD is performed by treating the tensor as a matrix, with an effective
@@ -97,8 +98,7 @@ def svd(
       abs_max_truncation_error = max_truncation_error
     # We must keep at least this many singular values to ensure the
     # truncation error is <= abs_max_truncation_error.
-    num_sing_vals_err = torch.nonzero(
-        trunc_errs > abs_max_truncation_error).nelement()
+    num_sing_vals_err = torch.nonzero(trunc_errs > abs_max_truncation_error).nelement()
   else:
     num_sing_vals_err = max_singular_values
 
@@ -122,10 +122,7 @@ def svd(
 
 
 def qr(
-    torch: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool = False
+  torch: Any, tensor: Tensor, pivot_axis: int, non_negative_diagonal: bool = False
 ) -> Tuple[Tensor, Tensor]:
   """Computes the QR decomposition of a tensor.
 
@@ -171,10 +168,7 @@ def qr(
 
 
 def rq(
-    torch: Any,
-    tensor: Tensor,
-    pivot_axis: int,
-    non_negative_diagonal: bool = False
+  torch: Any, tensor: Tensor, pivot_axis: int, non_negative_diagonal: bool = False
 ) -> Tuple[Tensor, Tensor]:
   """Computes the RQ decomposition of a tensor.
 
@@ -207,14 +201,13 @@ def rq(
   left_dims = tensor.shape[:pivot_axis]
   right_dims = tensor.shape[pivot_axis:]
   tensor = torch.reshape(tensor, [np.prod(left_dims), np.prod(right_dims)])
-  #torch has currently no support for complex dtypes
+  # torch has currently no support for complex dtypes
   q, r = torch.qr(torch.transpose(tensor, 0, 1))
   if non_negative_diagonal:
     phases = torch.sign(torch.diagonal(r))
     q = q * phases
     r = phases[:, None] * r
-  r, q = torch.transpose(r, 0, 1), torch.transpose(q, 0,
-                                                   1)  #M=r*q at this point
+  r, q = torch.transpose(r, 0, 1), torch.transpose(q, 0, 1)  # M=r*q at this point
   center_dim = r.shape[1]
   r = torch.reshape(r, list(left_dims) + [center_dim])
   q = torch.reshape(q, [center_dim] + list(right_dims))

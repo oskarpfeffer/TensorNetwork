@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """implementation of different Matrix Product Operators."""
+
 import numpy as np
 from tensornetwork.backends import backend_factory
 from tensornetwork.backend_contextmanager import get_default_backend
 from tensornetwork.backends.abstract_backend import AbstractBackend
 from typing import List, Union, Text, Optional, Any, Type
+
 Tensor = Any
 
 
@@ -27,16 +29,18 @@ class BaseMPO:
   Base class for MPOs.
   """
 
-  def __init__(self,
-               tensors: List[Tensor],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Optional[Text] = None) -> None:
+  def __init__(
+    self,
+    tensors: List[Tensor],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Optional[Text] = None,
+  ) -> None:
     """
     Initialize a BaseMPO.
     Args:
       tensors: A list of `Tensor` objects.
-      backend: The name of the backend that should be used to perform 
-        contractions. 
+      backend: The name of the backend that should be used to perform
+        contractions.
       name: A name for the MPO.
     """
     if backend is None:
@@ -47,9 +51,8 @@ class BaseMPO:
       self.backend = backend_factory.get_backend(backend)
     self.tensors = [self.backend.convert_to_tensor(t) for t in tensors]
     if len(self.tensors) > 0:
-      if not all(
-          self.tensors[0].dtype == tensor.dtype for tensor in self.tensors):
-        raise TypeError('not all dtypes in BaseMPO.tensors are the same')
+      if not all(self.tensors[0].dtype == tensor.dtype for tensor in self.tensors):
+        raise TypeError("not all dtypes in BaseMPO.tensors are the same")
 
     self.name = name
 
@@ -61,69 +64,72 @@ class BaseMPO:
 
   @property
   def dtype(self) -> Type[np.number]:
-    if not all(
-        self.tensors[0].dtype == tensor.dtype for tensor in self.tensors):
-      raise TypeError('not all dtypes in BaseMPO.tensors are the same')
+    if not all(self.tensors[0].dtype == tensor.dtype for tensor in self.tensors):
+      raise TypeError("not all dtypes in BaseMPO.tensors are the same")
     return self.tensors[0].dtype
 
   @property
   def bond_dimensions(self) -> List[int]:
     """Returns a vector of all bond dimensions.
-        The vector will have length `N+1`, where `N == num_sites`."""
-    return [self.tensors[0].shape[0]
-           ] + [tensor.shape[1] for tensor in self.tensors]
+    The vector will have length `N+1`, where `N == num_sites`."""
+    return [self.tensors[0].shape[0]] + [tensor.shape[1] for tensor in self.tensors]
 
 
 class InfiniteMPO(BaseMPO):
   """
-  Base class for implementation of infinite MPOs. Users should implement 
+  Base class for implementation of infinite MPOs. Users should implement
   specific infinite MPOs by deriving from InfiniteMPO.
   """
 
-  def __init__(self,
-               tensors: List[Tensor],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Optional[Text] = None) -> None:
+  def __init__(
+    self,
+    tensors: List[Tensor],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Optional[Text] = None,
+  ) -> None:
     """
     Initialize an infinite MPO object
     Args:
       tensors: The mpo tensors.
-      backend: An optional backend. Defaults to the defaulf backend  
+      backend: An optional backend. Defaults to the defaulf backend
         of TensorNetwork.
       name: An optional name for the MPO.
     """
     super().__init__(tensors=tensors, backend=backend, name=name)
     if self.bond_dimensions[0] != self.bond_dimensions[-1]:
-      raise ValueError('left and right MPO ancillary dimension have to match')
+      raise ValueError("left and right MPO ancillary dimension have to match")
 
   def roll(self, num_sites) -> None:
-    tensors = [self.tensors[n] for n in range(num_sites, len(self.tensors))
-              ] + [self.tensors[n] for n in range(num_sites)]
+    tensors = [self.tensors[n] for n in range(num_sites, len(self.tensors))] + [
+      self.tensors[n] for n in range(num_sites)
+    ]
     self.tensors = tensors
 
 
 class FiniteMPO(BaseMPO):
   """
-  Base class for implementation of finite MPOs. Users should implement 
+  Base class for implementation of finite MPOs. Users should implement
   specific finite MPOs by deriving from FiniteMPO
   """
 
-  def __init__(self,
-               tensors: List[Tensor],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Optional[Text] = None) -> None:
+  def __init__(
+    self,
+    tensors: List[Tensor],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Optional[Text] = None,
+  ) -> None:
     """
     Initialize a finite MPO object
     Args:
       tensors: The mpo tensors.
-      backend: An optional backend. Defaults to the defaulf backend  
+      backend: An optional backend. Defaults to the defaulf backend
         of TensorNetwork.
       name: An optional name for the MPO.
     """
 
     super().__init__(tensors=tensors, backend=backend, name=name)
     if (self.bond_dimensions[0] != 1) or (self.bond_dimensions[-1] != 1):
-      raise ValueError('left and right MPO ancillary dimensions have to be 1')
+      raise ValueError("left and right MPO ancillary dimensions have to be 1")
 
 
 class FiniteXXZ(FiniteMPO):
@@ -131,13 +137,15 @@ class FiniteXXZ(FiniteMPO):
   The Heisenberg Hamiltonian.
   """
 
-  def __init__(self,
-               Jz: np.ndarray,
-               Jxy: np.ndarray,
-               Bz: np.ndarray,
-               dtype: Type[np.number],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Text = 'XXZ_MPO') -> None:
+  def __init__(
+    self,
+    Jz: np.ndarray,
+    Jxy: np.ndarray,
+    Bz: np.ndarray,
+    dtype: Type[np.number],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Text = "XXZ_MPO",
+  ) -> None:
     """
     Returns the MPO of the finite XXZ model.
     Args:
@@ -157,62 +165,62 @@ class FiniteXXZ(FiniteMPO):
     N = len(Bz)
     mpo = []
     temp = np.zeros((1, 5, 2, 2), dtype=dtype)
-    #BSz
+    # BSz
     temp[0, 0, 0, 0] = -0.5 * Bz[0]
     temp[0, 0, 1, 1] = 0.5 * Bz[0]
 
-    #Sm
+    # Sm
     temp[0, 1, 0, 1] = Jxy[0] / 2.0 * 1.0
-    #Sp
+    # Sp
     temp[0, 2, 1, 0] = Jxy[0] / 2.0 * 1.0
-    #Sz
+    # Sz
     temp[0, 3, 0, 0] = Jz[0] * (-0.5)
     temp[0, 3, 1, 1] = Jz[0] * 0.5
 
-    #11
+    # 11
     temp[0, 4, 0, 0] = 1.0
     temp[0, 4, 1, 1] = 1.0
     mpo.append(temp)
     for n in range(1, N - 1):
       temp = np.zeros((5, 5, 2, 2), dtype=dtype)
-      #11
+      # 11
       temp[0, 0, 0, 0] = 1.0
       temp[0, 0, 1, 1] = 1.0
-      #Sp
+      # Sp
       temp[1, 0, 1, 0] = 1.0
-      #Sm
+      # Sm
       temp[2, 0, 0, 1] = 1.0
-      #Sz
+      # Sz
       temp[3, 0, 0, 0] = -0.5
       temp[3, 0, 1, 1] = 0.5
-      #BSz
+      # BSz
       temp[4, 0, 0, 0] = -0.5 * Bz[n]
       temp[4, 0, 1, 1] = 0.5 * Bz[n]
 
-      #Sm
+      # Sm
       temp[4, 1, 0, 1] = Jxy[n] / 2.0 * 1.0
-      #Sp
+      # Sp
       temp[4, 2, 1, 0] = Jxy[n] / 2.0 * 1.0
-      #Sz
+      # Sz
       temp[4, 3, 0, 0] = Jz[n] * (-0.5)
       temp[4, 3, 1, 1] = Jz[n] * 0.5
-      #11
+      # 11
       temp[4, 4, 0, 0] = 1.0
       temp[4, 4, 1, 1] = 1.0
 
       mpo.append(temp)
     temp = np.zeros((5, 1, 2, 2), dtype=dtype)
-    #11
+    # 11
     temp[0, 0, 0, 0] = 1.0
     temp[0, 0, 1, 1] = 1.0
-    #Sp
+    # Sp
     temp[1, 0, 1, 0] = 1.0
-    #Sm
+    # Sm
     temp[2, 0, 0, 1] = 1.0
-    #Sz
+    # Sz
     temp[3, 0, 0, 0] = -0.5
     temp[3, 0, 1, 1] = 0.5
-    #BSz
+    # BSz
     temp[4, 0, 0, 0] = -0.5 * Bz[-1]
     temp[4, 0, 1, 1] = 0.5 * Bz[-1]
 
@@ -228,12 +236,14 @@ class FiniteTFI(FiniteMPO):
   Convention: sigma_z=diag([-1,1])
   """
 
-  def __init__(self,
-               Jx: np.ndarray,
-               Bz: np.ndarray,
-               dtype: Type[np.number],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Text = 'TFI_MPO') -> None:
+  def __init__(
+    self,
+    Jx: np.ndarray,
+    Bz: np.ndarray,
+    dtype: Type[np.number],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Text = "TFI_MPO",
+  ) -> None:
     """
     Returns the MPO of the finite TFI model.
     Args:
@@ -252,37 +262,37 @@ class FiniteTFI(FiniteMPO):
     sigma_z = np.diag([-1, 1]).astype(dtype)
     mpo = []
     temp = np.zeros(shape=[1, 3, 2, 2], dtype=dtype)
-    #Bsigma_z
+    # Bsigma_z
     temp[0, 0, :, :] = self.Bz[0] * sigma_z
-    #sigma_x
+    # sigma_x
     temp[0, 1, :, :] = self.Jx[0] * sigma_x
-    #11
+    # 11
     temp[0, 2, 0, 0] = 1.0
     temp[0, 2, 1, 1] = 1.0
     mpo.append(temp)
     for n in range(1, N - 1):
       temp = np.zeros(shape=[3, 3, 2, 2], dtype=dtype)
-      #11
+      # 11
       temp[0, 0, 0, 0] = 1.0
       temp[0, 0, 1, 1] = 1.0
-      #sigma_x
+      # sigma_x
       temp[1, 0, :, :] = sigma_x
-      #Bsigma_z
+      # Bsigma_z
       temp[2, 0, :, :] = self.Bz[n] * sigma_z
-      #sigma_x
+      # sigma_x
       temp[2, 1, :, :] = self.Jx[n] * sigma_x
-      #11
+      # 11
       temp[2, 2, 0, 0] = 1.0
       temp[2, 2, 1, 1] = 1.0
       mpo.append(temp)
 
     temp = np.zeros([3, 1, 2, 2], dtype=dtype)
-    #11
+    # 11
     temp[0, 0, 0, 0] = 1.0
     temp[0, 0, 1, 1] = 1.0
-    #sigma_x
+    # sigma_x
     temp[1, 0, :, :] = sigma_x
-    #Bsigma_z
+    # Bsigma_z
     temp[2, 0, :, :] = self.Bz[-1] * sigma_z
     mpo.append(temp)
     super().__init__(tensors=mpo, backend=backend, name=name)
@@ -293,15 +303,17 @@ class FiniteFreeFermion2D(FiniteMPO):
   Free fermions on a 2d grid
   """
 
-  def __init__(self,
-               t1: float,
-               t2: float,
-               v: float,
-               N1: int,
-               N2: int,
-               dtype: Type[np.number],
-               backend: Optional[Union[AbstractBackend, Text]] = None,
-               name: Text = '2DTFI_MPO'):
+  def __init__(
+    self,
+    t1: float,
+    t2: float,
+    v: float,
+    N1: int,
+    N2: int,
+    dtype: Type[np.number],
+    backend: Optional[Union[AbstractBackend, Text]] = None,
+    name: Text = "2DTFI_MPO",
+  ):
     """
     Returns the MPO of the free fermions on
     an N1 by N2 grid. The MPO is snaked
@@ -339,8 +351,8 @@ class FiniteFreeFermion2D(FiniteMPO):
 
     mpo_matrix[0, 1, :, :] = t1 * cdag
     mpo_matrix[0, N1, :, :] = t2 * cdag
-    mpo_matrix[0, N1 + 1, :, :] = t1 * c # c @ sigma_z == -c
-    mpo_matrix[0, 2 * N1, :, :] = t2 * c # c @ sigma_z == -c
+    mpo_matrix[0, N1 + 1, :, :] = t1 * c  # c @ sigma_z == -c
+    mpo_matrix[0, 2 * N1, :, :] = t2 * c  # c @ sigma_z == -c
 
     mpo_matrix[0, 2 * N1 + 1, :, :] = eye
     mpo = [mpo_matrix]
@@ -370,10 +382,10 @@ class FiniteFreeFermion2D(FiniteMPO):
 
       mpo_matrix[2 * N1 + 1, 0, :, :] = v * particle_number
 
-      mpo_matrix[2 * N1 + 1, 1, :, :] = _t1 * cdag # cdag @ sigma_z == cdag
+      mpo_matrix[2 * N1 + 1, 1, :, :] = _t1 * cdag  # cdag @ sigma_z == cdag
       mpo_matrix[2 * N1 + 1, N1, :, :] = _t2 * cdag
-      mpo_matrix[2 * N1 + 1, N1+1, :, :] = _t1 * c # c @ sigma_z == -c
-      mpo_matrix[2 * N1 + 1, 2*N1, :, :] = _t2 * c # c @ sigma_z == -c
+      mpo_matrix[2 * N1 + 1, N1 + 1, :, :] = _t1 * c  # c @ sigma_z == -c
+      mpo_matrix[2 * N1 + 1, 2 * N1, :, :] = _t2 * c  # c @ sigma_z == -c
 
       mpo_matrix[2 * N1 + 1, 2 * N1 + 1, :, :] = eye
       mpo.append(mpo_matrix)

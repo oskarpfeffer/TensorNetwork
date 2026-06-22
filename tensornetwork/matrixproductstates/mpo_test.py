@@ -4,23 +4,30 @@ import tensorflow as tf
 import jax
 import torch
 from tensornetwork.backends import backend_factory
-#pylint: disable=line-too-long
-from tensornetwork.matrixproductstates.mpo import (FiniteMPO,
-                                                   BaseMPO,
-                                                   InfiniteMPO,
-                                                   FiniteFreeFermion2D)
+
+# pylint: disable=line-too-long
+from tensornetwork.matrixproductstates.mpo import (
+  FiniteMPO,
+  BaseMPO,
+  InfiniteMPO,
+  FiniteFreeFermion2D,
+)
 from tensornetwork.matrixproductstates.finite_mps import FiniteMPS
 from tensornetwork.matrixproductstates.dmrg import FiniteDMRG
 
 
-
-
 @pytest.fixture(
-    name="backend_dtype_values",
-    params=[('numpy', np.float64), ('numpy', np.complex128),
-            ('tensorflow', tf.float64), ('tensorflow', tf.complex128),
-            ('pytorch', torch.float64), ('jax', np.float64),
-            ('jax', np.complex128)])
+  name="backend_dtype_values",
+  params=[
+    ("numpy", np.float64),
+    ("numpy", np.complex128),
+    ("tensorflow", tf.float64),
+    ("tensorflow", tf.complex128),
+    ("pytorch", torch.float64),
+    ("jax", np.float64),
+    ("jax", np.complex128),
+  ],
+)
 def backend_dtype(request):
   return request.param
 
@@ -29,22 +36,22 @@ def test_base_mpo_init(backend_dtype_values):
   backend = backend_factory.get_backend(backend_dtype_values[0])
   dtype = backend_dtype_values[1]
   tensors = [
-      backend.randn((1, 5, 2, 2), dtype=dtype),
-      backend.randn((5, 5, 2, 2), dtype=dtype),
-      backend.randn((5, 1, 2, 2), dtype=dtype)
+    backend.randn((1, 5, 2, 2), dtype=dtype),
+    backend.randn((5, 5, 2, 2), dtype=dtype),
+    backend.randn((5, 1, 2, 2), dtype=dtype),
   ]
-  mpo = BaseMPO(tensors=tensors, backend=backend, name='test')
+  mpo = BaseMPO(tensors=tensors, backend=backend, name="test")
   assert mpo.backend is backend
   assert mpo.dtype == dtype
   np.testing.assert_allclose(mpo.bond_dimensions, [1, 5, 5, 1])
 
 
 def test_base_mpo_raises():
-  backend = backend_factory.get_backend('numpy')
+  backend = backend_factory.get_backend("numpy")
   tensors = [
-      backend.randn((1, 5, 2, 2), dtype=np.float64),
-      backend.randn((5, 5, 2, 2), dtype=np.float64),
-      backend.randn((5, 1, 2, 2), dtype=np.float32)
+    backend.randn((1, 5, 2, 2), dtype=np.float64),
+    backend.randn((5, 5, 2, 2), dtype=np.float64),
+    backend.randn((5, 1, 2, 2), dtype=np.float32),
   ]
   with pytest.raises(TypeError):
     BaseMPO(tensors=tensors, backend=backend)
@@ -82,9 +89,9 @@ def test_infinite_mpo_roll(backend):
 
 def test_len(backend):
   tensors = [
-      np.random.rand(1, 5, 2, 2),
-      np.random.rand(5, 5, 2, 2),
-      np.random.rand(5, 1, 2, 2)
+    np.random.rand(1, 5, 2, 2),
+    np.random.rand(5, 5, 2, 2),
+    np.random.rand(5, 1, 2, 2),
   ]
   mpo = BaseMPO(tensors=tensors, backend=backend)
   assert len(mpo) == 3
