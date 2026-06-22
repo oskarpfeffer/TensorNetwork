@@ -366,6 +366,28 @@ class AbstractNode(ABC):
     """Return the set of dangling edges connected to this node."""
     return [edge for edge in self.edges if edge.is_dangling()]
 
+  def get_neighbors(self) -> List["Node"]:
+    """Get all of the neighbors that are directly connected to the given node.
+
+    Note: `node` will never be in the returned list, even if `node` has a
+    trace edge.
+
+    Args:
+      node: A node.
+
+    Returns:
+      All of the neighboring edges that share an `Edge` with `node`.
+    """
+    neighbors_set = set()
+    for edge in self.edges:
+      if not edge.is_dangling() and not edge.is_trace():
+        if edge.node1 is self:
+          if edge.node2 not in neighbors_set:
+            neighbors_set.add(edge.node2)
+        elif edge.node1 not in neighbors_set:
+          neighbors_set.add(edge.node1)
+    return neighbors_set
+
   def set_name(self, name) -> None:
     if not isinstance(name, str):
       raise TypeError("Node name should be str type")
