@@ -22,6 +22,22 @@ import jax
 from collections.abc import Callable
 
 
+def zero_state(dimension: int, name: str = None) -> tn.Node:
+  """Return a [1, 0, 0, ...] vector node.
+
+  Args:
+      dimension (int): Leg dimension
+
+  Returns:
+      tn.Node: zero state node
+
+  """
+  if name is None:
+    name = "zero state"
+  tensor = jnp.zeros(dimension).at[0].set(1)
+  return tn.Node(tensor, name=name)
+
+
 def delta(order: int, dimension: int, name: str = None) -> tn.Node:
   """Create a delta node with given order and dimension.
 
