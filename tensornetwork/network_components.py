@@ -1408,6 +1408,32 @@ def get_all_dangling(nodes: Iterable[AbstractNode]) -> List[Edge]:
   return edges
 
 
+def get_positive_index(node: AbstractNode, axes_index: tuple or int):
+  """Returns index % node.get_rank().
+
+  Args:
+      tensor (jax.Array): tensor for which to compute the positive index
+      axes_index (tuple or int): index to be made positive
+  Returns:
+      tuple or int: positive index
+
+  """
+  rank = node.get_rank()
+  if isinstance(axes_index, int):
+    if not -rank <= axes_index < rank:
+      raise ValueError(
+        f"axis {axes_index} is out of bounds for array of dimension {rank}"
+      )
+    return axes_index % rank
+  if any(not -rank <= index < rank for index in axes_index):
+    raise ValueError(
+      f"axis tuple {axes_index} is out of bounds for array of dimension {rank}"
+    )
+  if len(set(axes_index)) < len(axes_index):
+    raise ValueError(f"axis tuple {axes_index} has repeated axes indices")
+  return tuple(index % rank for index in axes_index)
+
+
 def _flatten_trace_edges(
   edges: List[Edge], new_edge_name: Optional[Text] = None
 ) -> Edge:
