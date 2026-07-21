@@ -98,7 +98,7 @@ def join_computational_axes(
 ):
   """Join the computational axes when they are in the end.
 
-  Reshapes a tensor of shape [..., in_axes_size, out_axes_size] to a tensor of shape [..., math.prod(in_axes_size), math.prod(out_axes_size)].
+  Reshapes a tensor of shape (...) + in_axes_size + out_axes_size to a tensor of shape (..., math.prod(in_axes_size), math.prod(out_axes_size)).
   If invert, it does the inverse transformation.
 
   Args:
