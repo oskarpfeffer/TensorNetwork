@@ -172,8 +172,6 @@ class AbstractNode(ABC):
       ValueError: If the edge on axis is not dangling.
     """
     axis_num = self.get_axis_number(axis)
-    if axis_num < 0 or axis_num >= len(self.shape):
-      raise ValueError("Axis must be positive and less than rank of the tensor")
     if not self.edges[axis_num].is_dangling() and not override:
       raise ValueError(
         "Node '{}' already has a non-dangling edge for axis {}".format(self, axis)
@@ -346,8 +344,6 @@ class AbstractNode(ABC):
       ValueError: if axis isn't an int or if axis is too large or small.
     """
     axis_num = self.get_axis_number(axis)
-    if axis_num < 0 or axis_num >= len(self.shape):
-      raise ValueError("Axis must be positive and less than rank of the tensor")
     return self.shape[axis_num]
 
   def get_edge(self, axis: Union[int, Text]) -> "Edge":
