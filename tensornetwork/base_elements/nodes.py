@@ -22,7 +22,7 @@ import jax
 from collections.abc import Callable
 
 
-def delta(order: int, dimension: int) -> tn.Node:
+def delta(order: int, dimension: int, name: str = None) -> tn.Node:
   """Create a delta node with given order and dimension.
 
   Args:
@@ -33,11 +33,13 @@ def delta(order: int, dimension: int) -> tn.Node:
       tn.Node: delta node
 
   """
+  if name is None:
+    name = f"{order} delta"
   delta = jnp.zeros([dimension] * order)
 
   for i in range(dimension):
     delta[(i,) * order] = 1
-  return tn.Node(delta, f"{order} delta")
+  return tn.Node(delta, name)
 
 
 def random(
